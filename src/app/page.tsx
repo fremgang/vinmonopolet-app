@@ -29,26 +29,37 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [country, setCountry] = useState('');
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const perPage = 50;
-
-const [loading, setLoading] = useState(false);
-const fetchProducts = async () => {
-  setLoading(true);
-  const params = new URLSearchParams({ search, category, country, page: page.toString() });
-  const res = await fetch(`/api/products?${params}`);
-  const { products, total } = await res.json();
-  setProducts(products);
-  setTotal(total);
-  setLoading(false);
-};
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchProducts();
-  }, [search, category, country, page]);
+  }, [search, category, country, priceMin, priceMax]);
 
-  const totalPages = Math.ceil(total / perPage);
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({
+        ...(search && { search }),
+        ...(category && { category }),
+        ...(country && { country }),
+        ...(priceMin && { priceMin }),
+        ...(priceMax && { priceMax }),
+      });
+      const res = await fetch(`/api/products?${params}`);
+      if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+      const data = await res.json();
+      setProducts(data);
+    } catch (err) {
+      console.error('Fetch error:', err);
+      setError(err.message || 'Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="container mx-auto p-4">
@@ -59,56 +70,62 @@ const fetchProducts = async () => {
           type="text"
           placeholder="Search by name..."
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => setSearch(e.target.value)}
           className="w-full p-2 border rounded"
         />
         <input
           type="text"
-          placeholder="Filter by category..."
+          placeholder="Filter by category (e.g., Rødvin)..."
           value={category}
-          onChange={(e) => { setCategory(e.target.value); setPage(1); }}
+          onChange={(e) => setCategory(e.target.value)}
           className="w-full p-2 border rounded"
         />
         <input
           type="text"
           placeholder="Filter by country..."
           value={country}
-          onChange={(e) => { setCountry(e.target.value); setPage(1); }}
+          onChange={(e) => setCountry(e.target.value)}
           className="w-full p-2 border rounded"
         />
+        <div className="flex space-x-4">
+          <input
+            type="number"
+            placeholder="Min price (Kr)"
+            value={priceMin}
+            onChange={(e) => setPriceMin(e.target.value)}
+            className="w-full p-2 border rounded"
+          />
+          <input
+            type="number"
+            placeholder="Max price (Kr)"
+            value={priceMax}
+            onChange={(e) => setPriceMax(e.target.value)}
+            className="w-full p-2 border rounded"
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {products.map((product) => (
-          <div key={product.product_id} className="border p-4 rounded shadow">
-            <h2 className="text-xl font-semibold">{product.name}</h2>
-            <p><strong>ID:</strong> {product.product_id}</p>
-            <p><strong>Category:</strong> {product.category || 'N/A'}</p>
-            <p><strong>Price:</strong> {product.price ? `Kr ${product.price.toFixed(2)}` : 'N/A'}</p>
-            <p><strong>Country:</strong> {product.country || 'N/A'}</p>
-            <p><strong>Producer:</strong> {product.producer || 'N/A'}</p>
-            <p><strong>Smak:</strong> {product.smak || 'N/A'}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-6 flex justify-between">
-        <button
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page === 1}
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-300"
-        >
-          Previous
-        </button>
-        <p>Page {page} of {totalPages}</p>
-        <button
-          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          disabled={page === totalPages}
-          className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-300"
-        >
-          Next
-        </button>
-      </div>
+      {loading && <p className="text-center">Loading...</p>}
+      {error && <p className="text-red-500 text-center">{error}</p>}
+      {!loading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {products.length > 0 ? (
+            products.map((product) => (
+              <div key={product.product_id} className="border p-4 rounded shadow">
+                <h2 className="text-xl font-semibold">{product.name}</h2>
+                <p><strong>ID:</strong> {product.product_id}</p>
+                <p><strong>Category:</strong> {product.category || 'N/A'}</p>
+                <p><strong>Price:</strong> {product.price ? `Kr ${product.price.toFixed(2)}` : 'N/A'}</p>
+                <p><strong>Country:</strong> {product.country || 'N/A'}</p>
+                <p><strong>Producer:</strong> {product.producer || 'N/A'}</p>
+                <p><strong>Smak:</strong> {product.smak || 'N/A'}</p>
+              </div>
+            ))
+          ) : (
+            <p className="text-center col-span-full">No products found</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
