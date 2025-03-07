@@ -1,12 +1,12 @@
+import { ThemeProvider, ThemeToggle } from '@/components/ThemeProvider';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { GeistProvider, CssBaseline } from '@geist-ui/core';
+import { Wine, Info, Home, Mail } from 'lucide-react';
 import './globals.css';
-import ThemeToggle from './ThemeToggle';
 
 export const metadata: Metadata = {
   title: 'Vinmonopolet Explorer',
-  description: 'Discover and explore Norway’s finest wines and spirits from Vinmonopolet.',
+  description: 'Discover and explore Norways finest wines and spirits from Vinmonopolet.',
   icons: {
     icon: '/favicon.ico',
   },
@@ -14,43 +14,87 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <GeistProvider>
-      <CssBaseline />
-      <html lang="en">
-        <body className="font-sans antialiased flex flex-col min-h-screen">
-          <header style={{ backgroundColor: '#000', color: '#fff', padding: '24px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-            <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h1 style={{ fontSize: '2rem', fontWeight: '700', margin: 0 }}>Vinmonopolet Explorer</h1>
-                <p style={{ fontSize: '0.875rem', color: '#999', margin: '4px 0 0' }}>Norway’s Finest Wine & Spirits</p>
+    <ThemeProvider>
+      <html lang="en" className="scroll-smooth">
+        <body className="font-sans antialiased flex flex-col min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
+          <header className="bg-black text-white shadow-md sticky top-0 z-50">
+            <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6 flex flex-col sm:flex-row items-center sm:justify-between">
+              <div className="flex items-center mb-4 sm:mb-0">
+                <Wine className="mr-3 text-accent" size={28} />
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight">Vinmonopolet Explorer</h1>
+                  <p className="text-xs text-gray-400">Norways Finest Wine & Spirits</p>
+                </div>
               </div>
-              <nav style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                <Link href="/" passHref>
-                  <a style={{ color: '#fff', fontSize: '0.875rem', textDecoration: 'none', transition: 'color 0.2s' }}
-                    onMouseEnter={e => (e.currentTarget.style.color = '#ccc')}
-                    onMouseLeave={e => (e.currentTarget.style.color = '#fff')}
-                  >
-                    Home
-                  </a>
+              
+              <nav className="flex items-center gap-4 sm:gap-6">
+                <Link href="/" className="text-white hover:text-accent transition-colors flex items-center gap-1">
+                  <Home size={16} />
+                  <span className="text-sm">Home</span>
                 </Link>
-                <Link href="/about" passHref>
-                  <a style={{ color: '#fff', fontSize: '0.875rem', textDecoration: 'none', transition: 'color 0.2s' }}
-                    onMouseEnter={e => (e.currentTarget.style.color = '#ccc')}
-                    onMouseLeave={e => (e.currentTarget.style.color = '#fff')}
-                  >
-                    About
-                  </a>
+                
+                <Link href="/about" className="text-white hover:text-accent transition-colors flex items-center gap-1">
+                  <Info size={16} />
+                  <span className="text-sm">About</span>
                 </Link>
+                
+                <Link href="/contact" className="text-white hover:text-accent transition-colors flex items-center gap-1">
+                  <Mail size={16} />
+                  <span className="text-sm">Contact</span>
+                </Link>
+                
                 <ThemeToggle />
               </nav>
             </div>
           </header>
-          <main className="flex-1 py-12">{children}</main>
-          <footer className="bg-gray-900 text-white p-6 text-center">
-            <p className="text-sm text-gray-300">© 2025 Vinmonopolet Explorer. All rights reserved.</p>
+          
+          <main className="flex-1 py-8 sm:py-12">{children}</main>
+          
+          <footer className="bg-gray-900 text-gray-300 py-8">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                  <h3 className="text-white text-lg font-semibold mb-3">Vinmonopolet Explorer</h3>
+                  <p className="text-sm">
+                    A web application to discover and explore Norways finest wines and spirits.
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="text-white text-md font-semibold mb-3">Quick Links</h4>
+                  <ul className="space-y-2 text-sm">
+                    <li>
+                      <Link href="/" className="hover:text-white transition-colors">Home</Link>
+                    </li>
+                    <li>
+                      <Link href="/about" className="hover:text-white transition-colors">About</Link>
+                    </li>
+                    <li>
+                      <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
+                    </li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h4 className="text-white text-md font-semibold mb-3">Legal</h4>
+                  <ul className="space-y-2 text-sm">
+                    <li>
+                      <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+                    </li>
+                    <li>
+                      <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-800 mt-8 pt-6 text-center text-sm">
+                <p>&copy; {new Date().getFullYear()} Vinmonopolet Explorer. All rights reserved.</p>
+              </div>
+            </div>
           </footer>
         </body>
       </html>
-    </GeistProvider>
+    </ThemeProvider>
   );
 }
