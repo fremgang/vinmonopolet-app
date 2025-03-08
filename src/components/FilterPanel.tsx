@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Select, Slider, Button, Grid, Spacer } from '@geist-ui/core';
-import { X } from 'lucide-react';
+import { Select, Slider, Button, Grid, Spacer, Badge } from '@geist-ui/core';
+import { X, Filter, RefreshCw } from 'lucide-react';
 
 // Common countries and categories for wine
 const COMMON_COUNTRIES = [
@@ -29,6 +29,16 @@ export default function FilterPanel({ filters, onUpdateFilters }: FilterPanelPro
   const [selectedCountries, setSelectedCountries] = useState<string[]>(filters.countries);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(filters.categories);
   const [priceRange, setPriceRange] = useState<[number, number]>(filters.priceRange);
+  const [activeFilterCount, setActiveFilterCount] = useState(0);
+  
+  // Update filter count for badge
+  useEffect(() => {
+    let count = 0;
+    if (selectedCountries.length > 0) count++;
+    if (selectedCategories.length > 0) count++;
+    if (priceRange[0] > 0 || priceRange[1] < 10000) count++;
+    setActiveFilterCount(count);
+  }, [selectedCountries, selectedCategories, priceRange]);
   
   // Apply filters
   const handleApplyFilters = () => {
@@ -75,7 +85,31 @@ export default function FilterPanel({ filters, onUpdateFilters }: FilterPanelPro
   };
   
   return (
-    <div>
+    <div className="filter-panel">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold flex items-center">
+          <Filter size={18} className="mr-2" /> 
+          Filters
+          {activeFilterCount > 0 && (
+            <Badge type="warning" className="ml-2">{activeFilterCount}</Badge>
+          )}
+        </h3>
+        {activeFilterCount > 0 && (
+          <Button 
+            auto 
+            scale={1/2} 
+            icon={<RefreshCw size={14} />}
+            onClick={handleResetFilters}
+            type="abort"
+            onPointerEnterCapture={undefined} 
+            onPointerLeaveCapture={undefined}
+            placeholder={undefined}
+          >
+            Reset All
+          </Button>
+        )}
+      </div>
+      
       <Grid.Container gap={2}>
         <Grid xs={24} md={8}>
           <div className="w-full">
@@ -93,6 +127,20 @@ export default function FilterPanel({ filters, onUpdateFilters }: FilterPanelPro
                 <Select.Option key={country} value={country}>{country}</Select.Option>
               ))}
             </Select>
+            {selectedCountries.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {selectedCountries.map(country => (
+                  <Badge 
+                    key={country} 
+                    type="secondary" 
+                    className="cursor-pointer"
+                    onClick={() => setSelectedCountries(prev => prev.filter(c => c !== country))}
+                  >
+                    {country} <X size={12} />
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
         </Grid>
         
@@ -112,6 +160,20 @@ export default function FilterPanel({ filters, onUpdateFilters }: FilterPanelPro
                 <Select.Option key={category} value={category}>{category}</Select.Option>
               ))}
             </Select>
+            {selectedCategories.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {selectedCategories.map(category => (
+                  <Badge 
+                    key={category} 
+                    type="success" 
+                    className="cursor-pointer"
+                    onClick={() => setSelectedCategories(prev => prev.filter(c => c !== category))}
+                  >
+                    {category} <X size={12} />
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
         </Grid>
         
@@ -131,6 +193,21 @@ export default function FilterPanel({ filters, onUpdateFilters }: FilterPanelPro
               onPointerMoveCapture={undefined}
               type="secondary"
             />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>0 kr</span>
+              <span>10,000 kr</span>
+            </div>
+            {(priceRange[0] > 0 || priceRange[1] < 10000) && (
+              <div className="mt-2">
+                <Badge 
+                  type="warning" 
+                  className="cursor-pointer"
+                  onClick={() => setPriceRange([0, 10000])}
+                >
+                  {priceRange[0]} - {priceRange[1]} NOK <X size={12} />
+                </Badge>
+              </div>
+            )}
           </div>
         </Grid>
       </Grid.Container>
@@ -138,20 +215,17 @@ export default function FilterPanel({ filters, onUpdateFilters }: FilterPanelPro
       <div className="flex justify-end mt-4 gap-2">
         <Button 
           auto 
-          scale={2/3} 
-          type="abort" 
-          icon={<X size={16} />}
-          onClick={handleResetFilters}
+          type="secondary" 
+          onClick={() => onUpdateFilters(filters)}
           onPointerEnterCapture={undefined} 
           onPointerLeaveCapture={undefined}
           placeholder={undefined}
         >
-          Reset
+          Cancel
         </Button>
         <Button 
           auto 
           type="success" 
-          scale={2/3}
           onClick={handleApplyFilters}
           onPointerEnterCapture={undefined} 
           onPointerLeaveCapture={undefined}

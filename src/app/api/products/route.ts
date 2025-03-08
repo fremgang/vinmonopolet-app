@@ -46,29 +46,51 @@ export async function GET(request: Request) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100); // Cap at 100
     const offset = parseInt(searchParams.get('offset') || '0');
     
-    // Build query with raw SQL for case-insensitive search
-    // since Prisma doesn't support 'mode: insensitive' in all providers
-    let whereCondition = {};
+    // Get filter parameters
+    const countries = searchParams.getAll('countries');
+    const categories = searchParams.getAll('categories');
+    const minPrice = parseInt(searchParams.get('minPrice') || '0');
+    const maxPrice = parseInt(searchParams.get('maxPrice') || '10000');
     
+    // Build where conditions - use a more compatible approach
+    let whereCondition: any = {};
+    
+    // Basic price filter - always use this
+    whereCondition.price = {
+      gte: minPrice,
+      lte: maxPrice,
+      not: null, // Don't include products without a price
+    };
+    
+    // Country filter
+    if (countries.length > 0) {
+      whereCondition.country = {
+        in: countries,
+      };
+    }
+    
+    // Category filter
+    if (categories.length > 0) {
+      whereCondition.category = {
+        in: categories,
+      };
+    }
+    
+    // Search filter - use a simpler approach with OR conditions
     if (search) {
-      whereCondition = {
-        OR: [
-          { name: { contains: search } },
-          { district: { contains: search } },
-          { country: { contains: search } },
-          { category: { contains: search } },
-          { producer: { contains: search } }
-        ]
-      };
+      const searchTerm = `%${search}%`;
+      
+      whereCondition.OR = [
+        { name: { contains: search } },
+        { district: { contains: search } },
+        { country: { contains: search } },
+        { category: { contains: search } },
+        { producer: { contains: search } },
+        { sub_district: { contains: search } }
+      ];
     }
     
-    if (sortBy === 'price') {
-      whereCondition = {
-        ...whereCondition,
-        price: { not: null }
-      };
-    }
-    
+    // Execute query
     const products = await prisma.products.findMany({
       where: whereCondition,
       orderBy: {
@@ -77,15 +99,20 @@ export async function GET(request: Request) {
       take: limit,
       skip: offset
     });
-
+    
     // Add image URLs to products
     const productsWithImages = products.map(product => ({
       ...product,
       imageSmall: `https://bilder.vinmonopolet.no/cache/300x300-0/${product.product_id}-1.jpg`,
       imageMain: `https://bilder.vinmonopolet.no/cache/515x515-0/${product.product_id}-1.jpg`,
     }));
-
-    return NextResponse.json(productsWithImages);
+    
+    // Return response with cache headers
+    return NextResponse.json(productsWithImages, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300'
+      }
+    });
   } catch (error) {
     console.error('API error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

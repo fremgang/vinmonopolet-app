@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { Card, Input, Select, Button, Text, Spacer, Loading } from '@geist-ui/core';
-import { Search, Grid as GridIcon, List } from 'lucide-react';
+import { Card, Input, Select, Button, Text, Loading } from '@geist-ui/core';
+import { Search, Grid as GridIcon, List, Filter } from 'lucide-react';
+import FilterPanel from '@/components/FilterPanel';
+import ProductCard from '@/components/ProductCard';
+import ProductDetailsModal from '@/components/ProductDetailsModal';
 
 export interface Product {
   product_id: string;
@@ -41,7 +44,18 @@ export default function Home() {
   const [hasMore, setHasMore] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [error, setError] = useState<string | null>(null);
-  const limit = 20; // Reduced from 50 to 20 for performance
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  
+  // Filter state
+  const [filters, setFilters] = useState({
+    countries: [] as string[],
+    categories: [] as string[],
+    priceRange: [0, 10000] as [number, number]
+  });
+  
+  const limit = 20;
   const loaderRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<AbortController | null>(null);
 
@@ -53,12 +67,34 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Reset offset when search or sort changes
+  // Reset products when search or sort or filters change
   useEffect(() => {
     setProducts([]);
     setOffset(0);
     setHasMore(true);
-  }, [debouncedSearch, sortBy, sortOrder]);
+    // Don't call fetchProducts here to avoid the loop
+  }, [debouncedSearch, sortBy, sortOrder, filters]);
+
+  // This effect runs only once on component mount
+  useEffect(() => {
+    const initialFetch = async () => {
+      await fetchProducts(true);
+    };
+    initialFetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // This effect runs when dependencies that should trigger a refetch change
+  useEffect(() => {
+    // Skip the initial render
+    if (initialLoading) return;
+    
+    const refetch = async () => {
+      await fetchProducts(true);
+    };
+    refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, sortBy, sortOrder, filters]);
 
   const fetchProducts = useCallback(async (reset = false) => {
     // Don't fetch if already loading or no more results
@@ -78,8 +114,34 @@ export default function Home() {
       // Calculate offset - if reset, start from 0
       const currentOffset = reset ? 0 : offset;
       
-      const url = `/api/products?search=${encodeURIComponent(debouncedSearch)}&sortBy=${sortBy}&sortOrder=${sortOrder}&limit=${limit}&offset=${currentOffset}`;
-      console.log(`Fetching: ${url}`);
+      // Build query parameters
+      const queryParams = new URLSearchParams({
+        search: debouncedSearch,
+        sortBy,
+        sortOrder,
+        limit: limit.toString(),
+        offset: currentOffset.toString()
+      });
+      
+      // Add filter parameters if they exist
+      if (filters.countries.length > 0) {
+        filters.countries.forEach(country => {
+          queryParams.append('countries', country);
+        });
+      }
+      
+      if (filters.categories.length > 0) {
+        filters.categories.forEach(category => {
+          queryParams.append('categories', category);
+        });
+      }
+      
+      if (filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) {
+        queryParams.append('minPrice', filters.priceRange[0].toString());
+        queryParams.append('maxPrice', filters.priceRange[1].toString());
+      }
+      
+      const url = `/api/products?${queryParams.toString()}`;
       
       const response = await fetch(url, {
         signal: controllerRef.current.signal
@@ -109,12 +171,7 @@ export default function Home() {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [debouncedSearch, sortBy, sortOrder, offset, hasMore, loading, limit]);
-
-  // Initial load
-  useEffect(() => {
-    fetchProducts(true);
-  }, [debouncedSearch, sortBy, sortOrder, fetchProducts]);
+  }, [debouncedSearch, sortBy, sortOrder, offset, hasMore, loading, limit, filters]);
 
   // Intersection observer for infinite scroll
   useEffect(() => {
@@ -151,6 +208,14 @@ export default function Home() {
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
   };
+  
+  const handleUpdateFilters = (newFilters: Partial<typeof filters>) => {
+    setFilters(prev => ({
+      ...prev,
+      ...newFilters
+    }));
+    setShowFilters(false);
+  };
 
   // Format price with Norwegian format
   const formatPrice = (price: number | null) => {
@@ -168,7 +233,7 @@ export default function Home() {
 
   return (
     <div className="max-w-7xl mx-auto px-4">
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-8">
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-4">
         <div className="relative w-full md:w-96">
           <Input
             icon={<Search />}
@@ -198,6 +263,18 @@ export default function Home() {
           </Select>
           
           <Button
+            icon={<Filter size={18} />}
+            auto
+            onClick={() => setShowFilters(!showFilters)}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
+            placeholder={undefined}
+            type={showFilters ? "success" : "default"}
+          >
+            Filter
+          </Button>
+          
+          <Button
             icon={viewMode === 'grid' ? <List size={18} /> : <GridIcon size={18} />}
             auto
             onClick={() => setViewMode(prev => prev === 'grid' ? 'list' : 'grid')}
@@ -210,51 +287,85 @@ export default function Home() {
         </div>
       </div>
       
+      {showFilters && (
+        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md mb-6 shadow-md transition-all animate-fade-in">
+          <FilterPanel 
+            filters={filters} 
+            onUpdateFilters={handleUpdateFilters} 
+          />
+        </div>
+      )}
+      
       {error && (
         <div className="p-4 mb-4 text-red-500 bg-red-50 rounded-md">
           {error}
         </div>
       )}
       
-      <Text p className="text-gray-600 mb-4">
-        {products.length} products found
-      </Text>
+      <div className="flex justify-between items-center mb-4">
+        <Text p className="text-gray-600 dark:text-gray-300">
+          {products.length} products found
+        </Text>
+        
+        {(filters.countries.length > 0 || filters.categories.length > 0 || 
+          filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) && (
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm text-gray-500">Active filters:</span>
+            {filters.countries.map(country => (
+              <span key={country} className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-xs">
+                {country}
+              </span>
+            ))}
+            {filters.categories.map(category => (
+              <span key={category} className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-xs">
+                {category}
+              </span>
+            ))}
+            {(filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) && (
+              <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-xs">
+                {filters.priceRange[0]} - {filters.priceRange[1]} NOK
+              </span>
+            )}
+            <Button 
+              auto 
+              scale={1/3} 
+              type="error"
+              onClick={() => handleUpdateFilters({
+                countries: [],
+                categories: [],
+                priceRange: [0, 10000]
+              })}
+              onPointerEnterCapture={undefined}
+              onPointerLeaveCapture={undefined}
+              placeholder={undefined}
+            >
+              Clear All
+            </Button>
+          </div>
+        )}
+      </div>
       
       <div className={viewMode === 'grid' 
         ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' 
         : 'flex flex-col gap-6'
       }>
         {products.map(product => (
-          <Card key={product.product_id} hoverable>
-            <div className={`relative ${viewMode === 'grid' ? 'h-64' : 'h-80 md:flex gap-6'}`}>
-              <div className={`${viewMode === 'grid' ? 'h-full w-full' : 'md:w-1/3 h-full flex-shrink-0'} relative`}>
-                <Image
-                  src={product.imageMain}
-                  alt={product.name}
-                  fill
-                  className="object-contain p-2"
-                  sizes={viewMode === 'grid' ? "33vw" : "50vw"}
-                  priority={false}
-                />
-              </div>
-              
-              <div className={`${viewMode === 'grid' ? 'mt-4' : 'md:w-2/3'} flex flex-col`}>
-                <Text h4 my={0}>{product.name}</Text>
-                
-                <div className="mt-2 text-sm space-y-1">
-                  {product.category && <div><b>Category:</b> {product.category}</div>}
-                  {product.country && <div><b>Country:</b> {product.country}</div>}
-                  {product.district && <div><b>District:</b> {product.district}</div>}
-                  {product.producer && <div><b>Producer:</b> {product.producer}</div>}
-                </div>
-                
-                <Text h3 className="text-xl font-bold mt-3">
-                  {formatPrice(product.price)}
-                </Text>
-              </div>
-            </div>
-          </Card>
+          <ProductCard 
+            key={product.product_id} 
+            product={product} 
+            isGrid={viewMode === 'grid'}
+            onClick={() => {
+              setSelectedProduct(product);
+              setModalOpen(true);
+            }}
+          />
         ))}
+        
+        <ProductDetailsModal 
+          product={selectedProduct} 
+          visible={modalOpen} 
+          onClose={() => setModalOpen(false)} 
+        />
       </div>
       
       {loading && !initialLoading && (
@@ -273,9 +384,9 @@ export default function Home() {
       )}
       
       {!loading && products.length === 0 && (
-        <div className="text-center py-16">
+        <div className="text-center py-16 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <Text h4>No products found</Text>
-          <Text p>Try adjusting your search criteria</Text>
+          <Text p>Try adjusting your search criteria or filters</Text>
         </div>
       )}
     </div>
