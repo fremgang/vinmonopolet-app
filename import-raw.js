@@ -1,64 +1,60 @@
-const fs = require("fs");
-const sqlite3 = require("sqlite3").verbose();
+// import-data.js
+import { PrismaClient } from '@prisma/client';
+import fs from 'fs';
 
-const db = new sqlite3.Database("prisma/products.db");
-const data = JSON.parse(fs.readFileSync("products.json", "utf8")).products;
+const prisma = new PrismaClient();
 
-db.serialize(() => {
-  db.run(`DROP TABLE IF EXISTS products`);
-  db.run(`
-    CREATE TABLE products (
-      product_id TEXT PRIMARY KEY,
-      name TEXT,
-      category TEXT,
-      price INTEGER,
-      country TEXT,
-      district TEXT,
-      sub_district TEXT,
-      producer TEXT,
-      varetype TEXT,
-      lukt TEXT,
-      smak TEXT,
-      farge TEXT,
-      metode TEXT,
-      inneholder TEXT,
-      emballasjetype TEXT,
-      korktype TEXT,
-      utvalg TEXT,
-      grossist TEXT,
-      transportor TEXT
-    )
-  `);
+async function importData() {
+  try {
+    console.log('Reading products data...');
+    const data = JSON.parse(fs.readFileSync('products.json', 'utf8')).products;
+    
+    console.log(`Found ${data.length} products to import...`);
+    
+    // Clean up the existing data first
+    console.log('Cleaning up existing data...');
+    await prisma.products.deleteMany({});
+    
+    // Insert data in batches to avoid overwhelming the database
+    const batchSize = 100;
+    for (let i = 0; i < data.length; i += batchSize) {
+      const batch = data.slice(i, i + batchSize);
+      console.log(`Importing batch ${i / batchSize + 1} of ${Math.ceil(data.length / batchSize)}...`);
+      
+      await prisma.products.createMany({
+        data: batch.map(product => ({
+          product_id: product.product_id,
+          name: product.name,
+          category: product.category,
+          price: product.price,
+          country: product.country,
+          district: product.district,
+          sub_district: product.sub_district,
+          producer: product.producer,
+          varetype: product.varetype,
+          lukt: product.lukt,
+          smak: product.smak,
+          farge: product.farge,
+          metode: product.metode,
+          inneholder: product.inneholder,
+          emballasjetype: product.emballasjetype,
+          korktype: product.korktype,
+          utvalg: product.utvalg,
+          grossist: product.grossist,
+          transportor: product.transportor,
+          imageSmall: `https://bilder.vinmonopolet.no/cache/300x300-0/${product.product_id}-1.jpg`,
+          imageMain: `https://bilder.vinmonopolet.no/cache/515x515-0/${product.product_id}-1.jpg`,
+        })),
+        skipDuplicates: true,
+      });
+    }
+    
+    console.log('Import completed successfully!');
+  } catch (error) {
+    console.error('Error importing data:', error);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
 
-  const stmt = db.prepare(`
-    INSERT INTO products (product_id, name, category, price, country, district, sub_district, producer, varetype, lukt, smak, farge, metode, inneholder, emballasjetype, korktype, utvalg, grossist, transportor)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  data.forEach((product) => {
-    stmt.run([
-      product.product_id,
-      product.name,
-      product.category,
-      product.price,
-      product.country,
-      product.district,
-      product.sub_district,
-      product.producer,
-      product.varetype,
-      product.lukt,
-      product.smak,
-      product.farge,
-      product.metode,
-      product.inneholder,
-      product.emballasjetype,
-      product.korktype,
-      product.utvalg,
-      product.grossist,
-      product.transportor,
-    ]);
-  });
-
-  stmt.finalize();
-  db.close(() => console.log("Import complete"));
-});
+importData();

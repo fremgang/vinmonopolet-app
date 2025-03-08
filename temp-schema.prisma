@@ -1,0 +1,34 @@
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./products.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./temp-client"
+}
+
+model products {
+  product_id     String  @id @default(uuid())
+  name           String
+  category       String?
+  country        String?
+  price          Int?
+  district       String?
+  sub_district   String?
+  producer       String?
+  varetype       String?
+  lukt           String?
+  smak           String?
+  farge          String?
+  metode         String?
+  inneholder     String?
+  emballasjetype String?
+  korktype       String?
+  utvalg         String?
+  grossist       String?
+  transportor    String?
+  imageSmall     String?
+  imageMain      String?
+}

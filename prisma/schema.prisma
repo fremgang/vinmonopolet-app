@@ -1,6 +1,7 @@
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql" 
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -8,25 +9,31 @@ generator client {
 }
 
 model products {
-  product_id     String  @id @default(uuid())
+  product_id     String  @id
   name           String
-  category       String? // Region
+  category       String?
   country        String?
   price          Int?
-  district       String? // District
-  sub_district   String? // Sub-district
-  producer       String? // Producer
-  varetype       String? // Type
-  lukt           String? // lukt
-  smak           String? // Taste
-  farge          String? // Color
-  metode         String? // Method
-  inneholder     String? // Contains
-  emballasjetype String? // Packaging type
-  korktype       String? // Cork type
-  utvalg         String? // Selection
-  grossist       String? // Wholesaler
-  transportor    String? // Transporter
+  district       String?
+  sub_district   String?
+  producer       String?
+  varetype       String?
+  lukt           String?
+  smak           String?
+  farge          String?
+  metode         String?
+  inneholder     String?
+  emballasjetype String?
+  korktype       String?
+  utvalg         String?
+  grossist       String?
+  transportor    String?
   imageSmall     String?
   imageMain      String?
+
+  @@index([name])
+  @@index([category])
+  @@index([country])
+  @@index([price])
+  @@index([country, category])
 }

@@ -1,7 +1,35 @@
+// src/app/api/products/route.ts
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+// Add TypeScript declaration for global prisma
+declare global {
+  var prisma: PrismaClient | undefined;
+}
+
+// Database connection pooling for serverless environment with Neon
+// This pattern works well with Neon's serverless PostgreSQL
+let prisma: PrismaClient;
+
+if (process.env.NODE_ENV === 'production') {
+  prisma = new PrismaClient({
+    log: ['query', 'error', 'warn'],
+    // Recommended datasource configuration for Neon
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
+  });
+} else {
+  // Use a global variable in development to prevent multiple connections
+  if (!global.prisma) {
+    global.prisma = new PrismaClient({
+      log: ['query', 'error', 'warn'],
+    });
+  }
+  prisma = global.prisma;
+}
 
 // Define product interface
 export interface Product {
@@ -24,6 +52,8 @@ export interface Product {
   utvalg: string | null;
   grossist: string | null;
   transportor: string | null;
+  imageSmall: string | null;
+  imageMain: string | null;
 }
 
 // Define valid sort and filter options
@@ -52,7 +82,7 @@ export async function GET(request: Request) {
     const minPrice = parseInt(searchParams.get('minPrice') || '0');
     const maxPrice = parseInt(searchParams.get('maxPrice') || '10000');
     
-    // Build where conditions - use a more compatible approach
+    // Build where conditions
     let whereCondition: any = {};
     
     // Basic price filter - always use this
@@ -78,15 +108,13 @@ export async function GET(request: Request) {
     
     // Search filter - use a simpler approach with OR conditions
     if (search) {
-      const searchTerm = `%${search}%`;
-      
       whereCondition.OR = [
-        { name: { contains: search } },
-        { district: { contains: search } },
-        { country: { contains: search } },
-        { category: { contains: search } },
-        { producer: { contains: search } },
-        { sub_district: { contains: search } }
+        { name: { contains: search, mode: 'insensitive' } },
+        { district: { contains: search, mode: 'insensitive' } },
+        { country: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } },
+        { producer: { contains: search, mode: 'insensitive' } },
+        { sub_district: { contains: search, mode: 'insensitive' } }
       ];
     }
     
@@ -100,15 +128,8 @@ export async function GET(request: Request) {
       skip: offset
     });
     
-    // Add image URLs to products
-    const productsWithImages = products.map(product => ({
-      ...product,
-      imageSmall: `https://bilder.vinmonopolet.no/cache/300x300-0/${product.product_id}-1.jpg`,
-      imageMain: `https://bilder.vinmonopolet.no/cache/515x515-0/${product.product_id}-1.jpg`,
-    }));
-    
     // Return response with cache headers
-    return NextResponse.json(productsWithImages, {
+    return NextResponse.json(products, {
       headers: {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300'
       }
@@ -121,7 +142,5 @@ export async function GET(request: Request) {
       { error: 'Internal Server Error', details: errorMessage },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
