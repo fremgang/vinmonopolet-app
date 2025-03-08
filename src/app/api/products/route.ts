@@ -1,7 +1,7 @@
 // src/app/api/products/route.ts
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { withPulse } from '@prisma/extension-pulse';
+// Removed withPulse import to resolve module not found error
 
 // Declare prisma without initialization
 let prisma: PrismaClient;
@@ -16,11 +16,7 @@ if (process.env.NODE_ENV === 'production') {
         url: process.env.DATABASE_URL,
       },
     },
-  }).$extends(
-    withPulse({
-      apiKey: process.env['PULSE_API_KEY'] as string
-    })
-  );
+  });
 } else {
   // Use a global variable in development to prevent multiple connections
   if (!(global as any).prisma) {

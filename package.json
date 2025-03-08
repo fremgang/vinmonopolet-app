@@ -17,6 +17,7 @@
     "@geist-ui/core": "^2.3.8",
     "@prisma/client": "^6.4.1",
     "@prisma/extension-pulse": "^1.2.2",
+    "@tailwindcss/postcss": "^4.0.12",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "eslint-config-next": "^15.2.1",
@@ -31,6 +32,7 @@
     "stylelint-config-standard": "^37.0.0",
     "tailwindcss": "^4.0.12",
     "undici": "^7.4.0",
+    "uuid": "^11.1.0",
     "vercel": "^41.3.2"
   },
   "devDependencies": {
