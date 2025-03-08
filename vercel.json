@@ -6,7 +6,7 @@
     "regions": ["fra1"],
     "env": {
       "NEXT_PUBLIC_BACKEND_URL": {
-        "value": ""
+        "value": "https://vinmonopolet-app-ar5y-l0oyk45cg-fremgangs-projects.vercel.app"
       },
       "SETUP_TOKEN": {
         "value": "your-secure-random-setup-token-change-this"
