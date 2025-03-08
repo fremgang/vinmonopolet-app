@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import Image from 'next/image';
-import { Card, Input, Select, Button, Text, Loading } from '@geist-ui/core';
-import { Search, Grid as GridIcon, List, Filter } from 'lucide-react';
+import { Input, Select, Button, Text, Loading } from '@geist-ui/core';
+import { Search, Filter, List } from 'lucide-react';
 import FilterPanel from '@/components/FilterPanel';
 import ProductCard from '@/components/ProductCard';
 import ProductDetailsModal from '@/components/ProductDetailsModal';
@@ -72,7 +71,6 @@ export default function Home() {
     setProducts([]);
     setOffset(0);
     setHasMore(true);
-    // Don't call fetchProducts here to avoid the loop
   }, [debouncedSearch, sortBy, sortOrder, filters]);
 
   // This effect runs only once on component mount
@@ -97,24 +95,19 @@ export default function Home() {
   }, [debouncedSearch, sortBy, sortOrder, filters]);
 
   const fetchProducts = useCallback(async (reset = false) => {
-    // Don't fetch if already loading or no more results
     if (loading || (!reset && !hasMore)) return;
     
-    // Cancel previous requests
     if (controllerRef.current) {
       controllerRef.current.abort();
     }
     
-    // Create new abort controller for this request
     controllerRef.current = new AbortController();
     
     try {
       setLoading(true);
       
-      // Calculate offset - if reset, start from 0
       const currentOffset = reset ? 0 : offset;
       
-      // Build query parameters
       const queryParams = new URLSearchParams({
         search: debouncedSearch,
         sortBy,
@@ -123,7 +116,6 @@ export default function Home() {
         offset: currentOffset.toString()
       });
       
-      // Add filter parameters if they exist
       if (filters.countries.length > 0) {
         filters.countries.forEach(country => {
           queryParams.append('countries', country);
@@ -217,12 +209,6 @@ export default function Home() {
     setShowFilters(false);
   };
 
-  // Format price with Norwegian format
-  const formatPrice = (price: number | null) => {
-    if (price === null) return 'N/A';
-    return new Intl.NumberFormat('no-NO', { style: 'currency', currency: 'NOK' }).format(price);
-  };
-
   if (initialLoading) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -275,7 +261,7 @@ export default function Home() {
           </Button>
           
           <Button
-            icon={viewMode === 'grid' ? <List size={18} /> : <GridIcon size={18} />}
+            icon={<List size={18} />}
             auto
             onClick={() => setViewMode(prev => prev === 'grid' ? 'list' : 'grid')}
             onPointerEnterCapture={undefined}
@@ -345,10 +331,7 @@ export default function Home() {
         )}
       </div>
       
-      <div className={viewMode === 'grid' 
-        ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' 
-        : 'flex flex-col gap-6'
-      }>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {products.map(product => (
           <ProductCard 
             key={product.product_id} 
@@ -360,13 +343,13 @@ export default function Home() {
             }}
           />
         ))}
-        
-        <ProductDetailsModal 
-          product={selectedProduct} 
-          visible={modalOpen} 
-          onClose={() => setModalOpen(false)} 
-        />
       </div>
+      
+      <ProductDetailsModal 
+        product={selectedProduct} 
+        visible={modalOpen} 
+        onClose={() => setModalOpen(false)} 
+      />
       
       {loading && !initialLoading && (
         <div className="flex justify-center my-8">
@@ -374,7 +357,7 @@ export default function Home() {
         </div>
       )}
       
-      {/* Infinite scroll trigger - intentionally small height */}
+      {/* Infinite scroll trigger */}
       {hasMore && <div ref={loaderRef} style={{ height: '10px' }} />}
       
       {!hasMore && products.length > 0 && (

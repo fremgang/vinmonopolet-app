@@ -1,8 +1,9 @@
+// src/components/FilterSidebar.tsx
 import React, { useState, useEffect } from 'react';
-import { Select, Slider, Button, Grid, Spacer, Badge } from '@geist-ui/core';
-import { X, Filter, RefreshCw } from 'lucide-react';
+import { Slider, Button, Badge } from '@geist-ui/core';
+import { X, Filter, RefreshCw, ChevronRight, ChevronDown } from 'lucide-react';
 
-// Common countries and categories for wine
+// Common countries and categories
 const COMMON_COUNTRIES = [
   'France', 'Italy', 'Spain', 'Portugal', 'Germany', 
   'USA', 'Chile', 'Argentina', 'Australia', 'New Zealand',
@@ -15,30 +16,36 @@ const COMMON_CATEGORIES = [
   'Gin', 'Rum', 'Tequila', 'Brandy', 'Beer', 'Cider'
 ];
 
-interface FilterPanelProps {
+interface FilterSidebarProps {
   filters: {
     countries: string[];
     categories: string[];
     priceRange: [number, number];
   };
-  onUpdateFilters: (newFilters: Partial<FilterPanelProps['filters']>) => void;
+  onUpdateFilters: (newFilters: Partial<FilterSidebarProps['filters']>) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export default function FilterPanel({ filters, onUpdateFilters }: FilterPanelProps) {
-  // Local state for country and category multiple select
+export default function FilterSidebar({ 
+  filters, 
+  onUpdateFilters, 
+  isOpen, 
+  onClose 
+}: FilterSidebarProps) {
+  // Local state
   const [selectedCountries, setSelectedCountries] = useState<string[]>(filters.countries);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(filters.categories);
   const [priceRange, setPriceRange] = useState<[number, number]>(filters.priceRange);
-  const [activeFilterCount, setActiveFilterCount] = useState(0);
+  const [countryExpanded, setCountryExpanded] = useState(true);
+  const [categoryExpanded, setCategoryExpanded] = useState(true);
+  const [priceExpanded, setPriceExpanded] = useState(true);
   
-  // Update filter count for badge
-  useEffect(() => {
-    let count = 0;
-    if (selectedCountries.length > 0) count++;
-    if (selectedCategories.length > 0) count++;
-    if (priceRange[0] > 0 || priceRange[1] < 10000) count++;
-    setActiveFilterCount(count);
-  }, [selectedCountries, selectedCategories, priceRange]);
+  // Update active filter count
+  const activeFilterCount = 
+    selectedCountries.length + 
+    selectedCategories.length + 
+    (priceRange[0] > 0 || priceRange[1] < 10000 ? 1 : 0);
   
   // Apply filters
   const handleApplyFilters = () => {
@@ -69,170 +76,165 @@ export default function FilterPanel({ filters, onUpdateFilters }: FilterPanelPro
     setPriceRange(filters.priceRange);
   }, [filters]);
   
-  // Handle country selection
-  const handleCountryChange = (values: string | string[]) => {
-    setSelectedCountries(Array.isArray(values) ? values : [values]);
+  // Toggle country selection
+  const toggleCountry = (country: string) => {
+    setSelectedCountries(prev => 
+      prev.includes(country)
+        ? prev.filter(c => c !== country)
+        : [...prev, country]
+    );
   };
   
-  // Handle category selection
-  const handleCategoryChange = (values: string | string[]) => {
-    setSelectedCategories(Array.isArray(values) ? values : [values]);
-  };
-  
-  // Handle price range change
-  const handlePriceChange = (values: number[]) => {
-    setPriceRange([values[0], values[1]]);
+  // Toggle category selection
+  const toggleCategory = (category: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
   };
   
   return (
-    <div className="filter-panel">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold flex items-center">
-          <Filter size={18} className="mr-2" /> 
-          Filters
-          {activeFilterCount > 0 && (
-            <Badge type="warning" className="ml-2">{activeFilterCount}</Badge>
-          )}
-        </h3>
-        {activeFilterCount > 0 && (
+    <div className={`
+      fixed inset-y-0 right-0 w-72 bg-white dark:bg-gray-800 shadow-xl
+      transition-transform duration-300 transform z-40
+      ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+      overflow-y-auto
+    `}>
+      <div className="p-5">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-serif font-semibold flex items-center">
+            <Filter size={18} className="mr-2 text-burgundy-700" /> 
+            Filters
+            {activeFilterCount > 0 && (
+              <Badge type="warning" className="ml-2">{activeFilterCount}</Badge>
+            )}
+          </h3>
           <Button 
-            auto 
-            scale={1/2} 
-            icon={<RefreshCw size={14} />}
-            onClick={handleResetFilters}
+            auto
+            scale={1 / 2}
+            icon={<X size={16} />}
+            onClick={onClose}
             type="abort"
-            onPointerEnterCapture={undefined} 
-            onPointerLeaveCapture={undefined}
-            placeholder={undefined}
+            className="hover:bg-gray-100 dark:hover:bg-gray-700" placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}          />
+        </div>
+        
+        {/* Country filter */}
+        <div className="mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
+          <button 
+            onClick={() => setCountryExpanded(!countryExpanded)}
+            className="flex justify-between items-center w-full text-left font-medium mb-2"
           >
-            Reset All
-          </Button>
-        )}
-      </div>
-      
-      <Grid.Container gap={2}>
-        <Grid xs={24} md={8}>
-          <div className="w-full">
-            <label className="block mb-2 text-sm font-medium">Country</label>
-            <Select 
-              placeholder="Select countries"
-              multiple
-              width="100%"
-              value={selectedCountries}
-              onChange={handleCountryChange}
-              onPointerEnterCapture={undefined} 
-              onPointerLeaveCapture={undefined}
-            >
-              {COMMON_COUNTRIES.map(country => (
-                <Select.Option key={country} value={country}>{country}</Select.Option>
-              ))}
-            </Select>
-            {selectedCountries.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {selectedCountries.map(country => (
-                  <Badge 
-                    key={country} 
-                    type="secondary" 
-                    className="cursor-pointer"
-                    onClick={() => setSelectedCountries(prev => prev.filter(c => c !== country))}
+            Country
+            {countryExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </button>
+          
+          {countryExpanded && (
+            <div className="mt-3 space-y-2">
+              <div className="flex flex-wrap gap-2">
+                {COMMON_COUNTRIES.map(country => (
+                  <button
+                    key={country}
+                    onClick={() => toggleCountry(country)}
+                    className={`
+                      px-3 py-1 text-sm rounded-full transition-colors
+                      ${selectedCountries.includes(country) 
+                        ? 'bg-burgundy-700 text-white' 
+                        : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}
+                    `}
                   >
-                    {country} <X size={12} />
-                  </Badge>
+                    {country}
+                  </button>
                 ))}
               </div>
-            )}
-          </div>
-        </Grid>
-        
-        <Grid xs={24} md={8}>
-          <div className="w-full">
-            <label className="block mb-2 text-sm font-medium">Category</label>
-            <Select 
-              placeholder="Select categories"
-              multiple
-              width="100%"
-              value={selectedCategories}
-              onChange={handleCategoryChange}
-              onPointerEnterCapture={undefined} 
-              onPointerLeaveCapture={undefined}
-            >
-              {COMMON_CATEGORIES.map(category => (
-                <Select.Option key={category} value={category}>{category}</Select.Option>
-              ))}
-            </Select>
-            {selectedCategories.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {selectedCategories.map(category => (
-                  <Badge 
-                    key={category} 
-                    type="success" 
-                    className="cursor-pointer"
-                    onClick={() => setSelectedCategories(prev => prev.filter(c => c !== category))}
-                  >
-                    {category} <X size={12} />
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        </Grid>
-        
-        <Grid xs={24} md={8}>
-          <div className="w-full">
-            <label className="block mb-2 text-sm font-medium">
-              Price Range: {priceRange[0]} - {priceRange[1]} NOK
-            </label>
-            <Slider 
-              value={priceRange as any}
-              onChange={(val: any) => handlePriceChange(val)}
-              min={0}
-              max={10000}
-              step={100}
-              initialValue={[0, 10000] as any}
-              onPointerOverCapture={undefined} 
-              onPointerMoveCapture={undefined}
-              type="secondary"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>0 kr</span>
-              <span>10,000 kr</span>
             </div>
-            {(priceRange[0] > 0 || priceRange[1] < 10000) && (
-              <div className="mt-2">
-                <Badge 
-                  type="warning" 
-                  className="cursor-pointer"
-                  onClick={() => setPriceRange([0, 10000])}
-                >
-                  {priceRange[0]} - {priceRange[1]} NOK <X size={12} />
-                </Badge>
+          )}
+        </div>
+        
+        {/* Category filter */}
+        <div className="mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
+          <button 
+            onClick={() => setCategoryExpanded(!categoryExpanded)}
+            className="flex justify-between items-center w-full text-left font-medium mb-2"
+          >
+            Category
+            {categoryExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </button>
+          
+          {categoryExpanded && (
+            <div className="mt-3 space-y-2">
+              <div className="flex flex-wrap gap-2">
+                {COMMON_CATEGORIES.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => toggleCategory(category)}
+                    className={`
+                      px-3 py-1 text-sm rounded-full transition-colors
+                      ${selectedCategories.includes(category) 
+                        ? 'bg-sage-500 text-white' 
+                        : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}
+                    `}
+                  >
+                    {category}
+                  </button>
+                ))}
               </div>
-            )}
-          </div>
-        </Grid>
-      </Grid.Container>
-      
-      <div className="flex justify-end mt-4 gap-2">
-        <Button 
-          auto 
-          type="secondary" 
-          onClick={() => onUpdateFilters(filters)}
-          onPointerEnterCapture={undefined} 
-          onPointerLeaveCapture={undefined}
-          placeholder={undefined}
-        >
-          Cancel
-        </Button>
-        <Button 
-          auto 
-          type="success" 
-          onClick={handleApplyFilters}
-          onPointerEnterCapture={undefined} 
-          onPointerLeaveCapture={undefined}
-          placeholder={undefined}
-        >
-          Apply Filters
-        </Button>
+            </div>
+          )}
+        </div>
+        
+        {/* Price range filter */}
+        <div className="mb-6">
+          <button 
+            onClick={() => setPriceExpanded(!priceExpanded)}
+            className="flex justify-between items-center w-full text-left font-medium mb-2"
+          >
+            Price Range
+            {priceExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </button>
+          
+          {priceExpanded && (
+            <div className="mt-3">
+              <div className="text-sm mb-2">
+                {priceRange[0]} - {priceRange[1]} NOK
+              </div>
+              <Slider 
+                value={priceRange[0]}
+                onChange={(val: number) => setPriceRange([val, priceRange[1]])}
+                min={0}
+                max={100000}
+                step={100}
+                type="secondary"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>0 kr</span>
+                <span>5,000 kr</span>
+                <span>10,000 kr</span>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Action buttons */}
+        <div className="flex justify-between mt-6">
+          {activeFilterCount > 0 && (
+            <Button 
+              auto
+              type="warning"
+              icon={<RefreshCw size={14} />}
+              onClick={handleResetFilters}
+              className="flex-1 mr-2" placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}            >
+              Reset
+            </Button>
+          )}
+          <Button 
+            auto
+            type="success"
+            onClick={handleApplyFilters}
+            className={activeFilterCount > 0 ? "flex-1" : "w-full"} placeholder={undefined} onPointerEnterCapture={undefined} onPointerLeaveCapture={undefined}          >
+            Apply Filters
+          </Button>
+        </div>
       </div>
     </div>
   );

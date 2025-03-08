@@ -1,53 +1,37 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import * as React from 'react';
 import { GeistProvider, CssBaseline } from '@geist-ui/core';
-import { Moon, Sun } from 'lucide-react';
 
-// Create a theme context
-type ThemeContextType = {
-  isDark: boolean;
-  toggleTheme: () => void;
-};
-
-const ThemeContext = createContext<ThemeContextType>({
+const ThemeContext = React.createContext({
   isDark: false,
-  toggleTheme: () => {},
+  toggleTheme: () => {}
 });
 
-// Custom hook for using theme
-export const useTheme = () => useContext(ThemeContext);
+export const useTheme = () => React.useContext(ThemeContext);
 
-// Theme provider component
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [isDark, setIsDark] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [isDark, setIsDark] = React.useState(false);
 
-  // Effect to initialize theme from localStorage
-  useEffect(() => {
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const initialDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
     
     setIsDark(initialDark);
     document.documentElement.classList.toggle('dark', initialDark);
-    setMounted(true);
   }, []);
 
-  // Toggle theme function
-  const toggleTheme = () => {
+  const toggleTheme = React.useCallback(() => {
     setIsDark(prev => {
       const newDark = !prev;
       localStorage.setItem('theme', newDark ? 'dark' : 'light');
       document.documentElement.classList.toggle('dark', newDark);
       return newDark;
     });
-  };
-
-  // Only render content after mounted to avoid hydration mismatch
-  if (!mounted) {
-    return <div style={{ visibility: 'hidden' }}>{children}</div>;
-  }
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ isDark, toggleTheme }}>
@@ -59,7 +43,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Theme toggle button component
 export function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme();
   
@@ -69,7 +52,7 @@ export function ThemeToggle() {
       className="bg-accent hover:bg-accent/90 text-white px-4 py-2 rounded-md transition-colors flex items-center gap-2"
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-      {isDark ? <Sun size={16} /> : <Moon size={16} />}
+      {isDark ? "🔆" : "🌙"}
       <span className="hidden sm:inline">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
     </button>
   );

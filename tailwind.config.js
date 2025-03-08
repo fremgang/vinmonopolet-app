@@ -4,6 +4,10 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-montserrat)', 'sans-serif'],
+        serif: ['var(--font-playfair)', 'serif'],
+      },
       colors: {
         cream: '#F9F1E7',
         accent: '#7f1d1d', // Wine red
