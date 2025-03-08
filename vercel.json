@@ -4,10 +4,12 @@
     "installCommand": "npm install",
     "framework": "nextjs",
     "regions": ["fra1"],
-"env": {
-  "NEXT_PUBLIC_BACKEND_URL": "https://vinmonopolet-app-ar5y-l0oyk45cg-fremgangs-projects.vercel.app",
-  "SETUP_TOKEN": "3cbe37c57a4c790a63c2167bf3ebdb253c490adc96f52fc7057241ed37320c72"
-},
+    "env": {
+      "NEXT_PUBLIC_BACKEND_URL": "https://vinmonopolet-app-ar5y-l0oyk45cg-fremgangs-projects.vercel.app",
+      "SETUP_TOKEN": "3cbe37c57a4c790a63c2167bf3ebdb253c490adc96f52fc7057241ed37320c72",
+      "DATABASE_URL": "postgresql://neondb_owner:npg_uro9YKMO5AdI@ep-calm-boat-a2pwnyhv-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require",
+      "DIRECT_URL": "postgresql://neondb_owner:npg_uro9YKMO5AdI@ep-calm-boat-a2pwnyhv.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+    },
     "functions": {
       "src/app/api/products/route.ts": {
         "memory": 1024,
