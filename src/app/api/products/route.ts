@@ -1,16 +1,12 @@
 // src/app/api/products/route.ts
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { withPulse } from '@prisma/extension-pulse';
 
-// Add TypeScript declaration for global prisma
-declare global {
-  var prisma: PrismaClient | undefined;
-}
-
-// Database connection pooling for serverless environment with Neon
-// This pattern works well with Neon's serverless PostgreSQL
+// Declare prisma without initialization
 let prisma: PrismaClient;
 
+// Conditional initialization based on environment
 if (process.env.NODE_ENV === 'production') {
   prisma = new PrismaClient({
     log: ['query', 'error', 'warn'],
@@ -20,16 +16,23 @@ if (process.env.NODE_ENV === 'production') {
         url: process.env.DATABASE_URL,
       },
     },
-  });
+  }).$extends(
+    withPulse({
+      apiKey: process.env['PULSE_API_KEY'] as string
+    })
+  );
 } else {
   // Use a global variable in development to prevent multiple connections
-  if (!global.prisma) {
-    global.prisma = new PrismaClient({
+  if (!(global as any).prisma) {
+    (global as any).prisma = new PrismaClient({
       log: ['query', 'error', 'warn'],
     });
   }
-  prisma = global.prisma;
+  prisma = (global as any).prisma;
 }
+
+// Export the configured prisma client
+export { prisma };
 
 // Define product interface
 export interface Product {
