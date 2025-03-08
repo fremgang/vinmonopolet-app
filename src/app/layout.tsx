@@ -36,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         
         <main className="flex-1 pt-32 pb-12">
           {children}
+          <Analytics />
         </main>
         
         <footer className="bg-gray-900 text-gray-300 py-8">
