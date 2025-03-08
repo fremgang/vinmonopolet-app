@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Header from '@/components/Header';
+import { Analytics } from "@vercel/analytics/react"
 import type { Metadata } from 'next';
 import { Montserrat, Playfair_Display } from 'next/font/google';
 import './globals.css';
