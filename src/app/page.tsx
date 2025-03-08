@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Input, Select, Button, Text, Loading } from '@geist-ui/core';
-import { Search, Filter, List } from 'lucide-react';
+import { Search, Filter, List, Grid } from 'lucide-react';
 import FilterPanel from '@/components/FilterPanel';
 import ProductCard from '@/components/ProductCard';
 import ProductDetailsModal from '@/components/ProductDetailsModal';
@@ -261,7 +261,7 @@ export default function Home() {
           </Button>
           
           <Button
-            icon={<List size={18} />}
+            icon={viewMode === 'grid' ? <List size={18} /> : <Grid size={18} />}
             auto
             onClick={() => setViewMode(prev => prev === 'grid' ? 'list' : 'grid')}
             onPointerEnterCapture={undefined}
@@ -331,19 +331,38 @@ export default function Home() {
         )}
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map(product => (
-          <ProductCard 
-            key={product.product_id} 
-            product={product} 
-            isGrid={viewMode === 'grid'}
-            onClick={() => {
-              setSelectedProduct(product);
-              setModalOpen(true);
-            }}
-          />
-        ))}
-      </div>
+      {/* Product grid/list container */}
+      {viewMode === 'grid' ? (
+        // Grid View
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {products.map(product => (
+            <ProductCard 
+              key={product.product_id} 
+              product={product} 
+              isGrid={true}
+              onClick={() => {
+                setSelectedProduct(product);
+                setModalOpen(true);
+              }}
+            />
+          ))}
+        </div>
+      ) : (
+        // List View
+        <div className="flex flex-col space-y-4 w-full">
+          {products.map(product => (
+            <ProductCard 
+              key={product.product_id} 
+              product={product} 
+              isGrid={false}
+              onClick={() => {
+                setSelectedProduct(product);
+                setModalOpen(true);
+              }}
+            />
+          ))}
+        </div>
+      )}
       
       <ProductDetailsModal 
         product={selectedProduct} 

@@ -2,9 +2,9 @@
 
 # dependencies
 /node_modules
-.env
 /.pnp
 .pnp.*
+.env
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
@@ -40,3 +40,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.env
