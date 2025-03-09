@@ -2,29 +2,23 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
-// Declare prisma without initialization
-let prisma: PrismaClient;
-
-// Conditional initialization based on environment
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient({
-    log: ['query', 'error', 'warn'],
-    // Recommended datasource configuration for Neon
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL,
-      },
-    },
-  });
-} else {
-  // Use a global variable in development to prevent multiple connections
-  if (!(global as any).prisma) {
-    (global as any).prisma = new PrismaClient({
-      log: ['query', 'error', 'warn'],
-    });
-  }
-  prisma = (global as any).prisma;
+// Declare global type for prisma to prevent multiple instances
+declare global {
+  var prisma: PrismaClient | undefined;
 }
+
+// Prisma client initialization with proper handling for development/production
+const prisma = global.prisma || new PrismaClient({
+  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+});
+
+// Save reference to prisma in development to prevent multiple connections
+if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
 
 // Define product interface
 export interface Product {
@@ -58,7 +52,6 @@ const validSortOrders = ['asc', 'desc'] as const;
 type SortOrder = typeof validSortOrders[number];
 
 export async function GET(request: Request) {
-  console.log('Database URL exists:', !!process.env.DATABASE_URL);
   try {
     const { searchParams } = new URL(request.url);
     
@@ -132,10 +125,24 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('API error:', error);
+    
+    // Detailed error logging
     if (error instanceof Error) {
       console.error('Error type:', error.name);
       console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
+      // Check for connection issues
+      if (error.message.includes('database connection') || 
+          error.message.includes('timed out') ||
+          error.message.includes('Connection refused')) {
+        return NextResponse.json(
+          { error: 'Database Connection Error', details: error.message },
+          { status: 503 }  // Service Unavailable for connection issues
+        );
+      }
     }
+    
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return NextResponse.json(
