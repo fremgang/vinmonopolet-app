@@ -9,6 +9,7 @@ CREATE INDEX IF NOT EXISTS "products_name_country_idx" ON "products"("name", "co
 -- Enable trigram extension for improved text search
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+-- 
 -- Add trigram indexes for better text search performance
 CREATE INDEX IF NOT EXISTS "products_name_trgm_idx" ON "products" USING GIN (name gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS "products_lukt_trgm_idx" ON "products" USING GIN (lukt gin_trgm_ops);
