@@ -5,31 +5,52 @@
 
 /* Custom CSS Variables for Theme Colors */
 :root {
-  /* Congo Brown color palette */
-  --congo-brown-50: #fbf6f5;
-  --congo-brown-100: #f6ebea;
-  --congo-brown-200: #efdcd9;
-  --congo-brown-300: #e3c2be;
-  --congo-brown-400: #d19f98;
-  --congo-brown-500: #be7e75;
-  --congo-brown-600: #a8635a;
-  --congo-brown-700: #8c5149;
-  --congo-brown-800: #75453f;
-  --congo-brown-900: #643f3a;
-  --congo-brown-950: #341e1b;
+  /* Cabernet color palette */
+  --cabernet-50: #fbf5f6;
+  --cabernet-100: #f7ebed;
+  --cabernet-200: #f0d6dc;
+  --cabernet-300: #e3b3bf;
+  --cabernet-400: #d4859a;
+  --cabernet-500: #c05d7a;
+  --cabernet-600: #a94264;
+  --cabernet-700: #8d3450;
+  --cabernet-800: #762e45;
+  --cabernet-900: #632a3c;
+  --cabernet-950: #3b151f;
 
-  /* Wine color palette (as fallback) */
-  --wine-50: #fcf5f5;
-  --wine-100: #f8e9e9;
-  --wine-200: #f0d2d2;
-  --wine-300: #e6b0b0;
-  --wine-400: #d77e7e;
-  --wine-500: #c95252;
-  --wine-600: #b93333;
-  --wine-700: #9c2727;
-  --wine-800: #7f1d1d;
-  --wine-900: #671919;
-  --wine-950: #450505;
+  /* Oak color palette */
+  --oak-50: #f9f7f4;
+  --oak-100: #f3ede6;
+  --oak-200: #e5d8c8;
+  --oak-300: #d6bea4;
+  --oak-400: #c39c7a;
+  --oak-500: #b4835d;
+  --oak-600: #a7714e;
+  --oak-700: #8b5a3f;
+  --oak-800: #734938;
+  --oak-900: #5f3d32;
+  --oak-950: #331f19;
+
+  /* Vineyard color palette */
+  --vineyard-50: #f6f7f6;
+  --vineyard-100: #e2e7e1;
+  --vineyard-200: #c4d0c2;
+  --vineyard-300: #a0b49d;
+  --vineyard-400: #7c9478;
+  --vineyard-500: #5f795c;
+  --vineyard-600: #4a6148;
+  --vineyard-700: #3d4e3b;
+  --vineyard-800: #324032;
+  --vineyard-900: #2b362b;
+  --vineyard-950: #151d15;
+
+  /* Cream color */
+  --cream: #f9f7f2;
+}
+
+/* Typography Refinements */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-serif tracking-tight;
 }
 
 /* Table-style list view */
@@ -38,15 +59,15 @@
 }
 
 .product-table-header {
-  @apply bg-congo-brown-50 dark:bg-congo-brown-950 font-medium text-left border-b border-congo-brown-200 dark:border-congo-brown-900 sticky top-0 z-10;
+  @apply bg-white dark:bg-gray-800 font-medium text-left border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10;
 }
 
 .product-table-header th {
-  @apply px-4 py-3 font-semibold text-congo-brown-900 dark:text-congo-brown-200;
+  @apply px-4 py-3 font-semibold text-gray-700 dark:text-gray-300;
 }
 
 .product-table-body tr {
-  @apply border-b border-congo-brown-100 dark:border-congo-brown-900 hover:bg-congo-brown-50 dark:hover:bg-congo-brown-900 cursor-pointer transition-colors;
+  @apply border-b border-gray-100 dark:border-gray-800 hover:bg-cream dark:hover:bg-gray-700 cursor-pointer transition-colors;
 }
 
 .product-table-body td {
@@ -62,16 +83,24 @@
 }
 
 .price-cell {
-  @apply font-bold text-congo-brown-700 dark:text-congo-brown-300;
+  @apply font-bold text-cabernet-700 dark:text-cabernet-300;
 }
 
 .availability-badge {
-  @apply inline-block text-xs px-2 py-1 rounded-full bg-congo-brown-100 dark:bg-congo-brown-800 text-congo-brown-800 dark:text-congo-brown-200;
+  @apply inline-block text-xs px-2 py-1 rounded-full bg-vineyard-100 dark:bg-vineyard-900 text-vineyard-800 dark:text-vineyard-200;
 }
 
-/* Theme transitions */
-.transition-theme {
-  @apply transition-colors duration-300;
+/* Button Styles */
+.btn-primary {
+  @apply bg-cabernet-700 text-white hover:bg-cabernet-800 transition-colors px-4 py-2 rounded-md;
+}
+
+.btn-secondary {
+  @apply bg-oak-100 text-oak-800 hover:bg-oak-200 transition-colors px-4 py-2 rounded-md;
+}
+
+.btn-outline {
+  @apply border border-cabernet-300 text-cabernet-700 hover:bg-cabernet-50 transition-colors px-4 py-2 rounded-md;
 }
 
 /* Product card hover effects */
@@ -80,13 +109,24 @@
 }
 
 .product-card:hover {
-  @apply shadow-lg transform -translate-y-1;
+  @apply shadow-card-hover transform -translate-y-1;
 }
 
-/* Flat header styles */
-.flat-header {
-  @apply border-b border-congo-brown-200 dark:border-congo-brown-900;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+/* Badge styles */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-vineyard {
+  @apply bg-vineyard-100 text-vineyard-800 dark:bg-vineyard-900 dark:text-vineyard-200;
+}
+
+.badge-cabernet {
+  @apply bg-cabernet-100 text-cabernet-800 dark:bg-cabernet-900 dark:text-cabernet-200;
+}
+
+.badge-oak {
+  @apply bg-oak-100 text-oak-800 dark:bg-oak-900 dark:text-oak-200;
 }
 
 /* Animations */
