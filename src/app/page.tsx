@@ -6,6 +6,7 @@ import { Search, Filter, List, Grid } from 'lucide-react';
 import FilterPanel from '@/components/FilterPanel';
 import ProductCard from '@/components/ProductCard';
 import ProductDetailsModal from '@/components/ProductDetailsModal';
+import Image from 'next/image';
 
 export interface Product {
   product_id: string;
@@ -216,50 +217,53 @@ export default function Home() {
     return `${new Intl.NumberFormat('no-NO').format(price)} kr`;
   };
 
-  // Render a table row for list view
-  const renderListItem = (product: Product) => {
-    return (
-      <div 
-        key={product.product_id}
-        className="list-table-row hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-        onClick={() => {
-          setSelectedProduct(product);
-          setModalOpen(true);
-        }}
-      >
-        <div className="list-table-cell image-cell">
-          <div className="product-image-container">
-            <img 
-              src={product.imageMain} 
-              alt={product.name}
-              onError={(e) => { e.currentTarget.src = '/wine-placeholder.svg' }}
-              className="product-image"
-            />
-          </div>
-        </div>
-        <div className="list-table-cell name-cell font-medium">
-          {product.name}
-        </div>
-        <div className="list-table-cell category-cell">
-          {product.category || '—'}
-        </div>
-        <div className="list-table-cell country-cell">
-          {product.country || '—'}
-        </div>
-        <div className="list-table-cell type-cell">
-          {product.varetype || '—'}
-        </div>
-        <div className="list-table-cell price-cell font-bold text-wine-800">
-          {formatPrice(product.price)}
-        </div>
-        <div className="list-table-cell availability-cell">
-          <span className="availability-badge">
-            {product.utvalg || '—'}
-          </span>
+// Replace the renderListItem function with this updated version
+const renderListItem = (product: Product) => {
+  return (
+    <div 
+      key={product.product_id}
+      className="list-table-row hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+      onClick={() => {
+        setSelectedProduct(product);
+        setModalOpen(true);
+      }}
+    >
+      <div className="list-table-cell image-cell">
+        <div className="product-image-container relative">
+          <Image 
+            src={product.imageMain} 
+            alt={product.name}
+            width={40}
+            height={56}
+            className="product-image object-contain"
+            unoptimized={product.imageMain.includes('vinmonopolet.no')}
+            onError={() => {/* Next/Image handles errors differently */}}
+          />
         </div>
       </div>
-    );
-  };
+      <div className="list-table-cell name-cell font-medium">
+        {product.name}
+      </div>
+      <div className="list-table-cell category-cell">
+        {product.category || '—'}
+      </div>
+      <div className="list-table-cell country-cell">
+        {product.country || '—'}
+      </div>
+      <div className="list-table-cell type-cell">
+        {product.varetype || '—'}
+      </div>
+      <div className="list-table-cell price-cell font-bold text-wine-800">
+        {formatPrice(product.price)}
+      </div>
+      <div className="list-table-cell availability-cell">
+        <span className="availability-badge">
+          {product.utvalg || '—'}
+        </span>
+      </div>
+    </div>
+  );
+};
 
   // List view table header
   const renderListHeader = () => {
