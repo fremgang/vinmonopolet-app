@@ -61,21 +61,19 @@ export async function GET(request: Request) {
       ];
     }
     
-    // Get total count for pagination info - use caching for this query
+    // Get total count for pagination info
     const totalCount = await prisma.products.count({
-      where: whereCondition,
-      cacheStrategy: { ttl: 60 } // Cache for 60 seconds
+      where: whereCondition
     });
     
-    // Execute paginated query - use caching for product data
+    // Execute paginated query
     const products = await prisma.products.findMany({
       where: whereCondition,
       orderBy: {
         [sortBy]: sortOrder
       },
       skip: offset,
-      take: limit,
-      cacheStrategy: { ttl: 30 } // Cache for 30 seconds
+      take: limit
     });
     
     // Return response with pagination metadata
