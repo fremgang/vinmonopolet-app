@@ -2,80 +2,54 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// Define product interface
-export interface Product {
-  product_id: string;
-  name: string;
-  category: string | null;
-  country: string | null;
-  price: number | null;
-  district: string | null;
-  sub_district: string | null;
-  producer: string | null;
-  varetype: string | null;
-  lukt: string | null;
-  smak: string | null;
-  farge: string | null;
-  metode: string | null;
-  inneholder: string | null;
-  emballasjetype: string | null;
-  korktype: string | null;
-  utvalg: string | null;
-  grossist: string | null;
-  transportor: string | null;
-  imageSmall: string | null;
-  imageMain: string | null;
-}
-
-// Define valid sort and filter options
+// Define valid sort options
 const validSortFields = ['product_id', 'name', 'price', 'category', 'country', 'district'];
 const validSortOrders = ['asc', 'desc'] as const;
-
 type SortOrder = typeof validSortOrders[number];
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // Extract and validate query parameters
+    // Extract query parameters
     const search = searchParams.get('search')?.toLowerCase() || '';
     const sortBy = validSortFields.includes(searchParams.get('sortBy') || '') 
       ? searchParams.get('sortBy') || 'price'
       : 'price';
-    
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as SortOrder;
     
-    // Get filter parameters
+    // Pagination parameters
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const page = parseInt(searchParams.get('page') || '1');
+    const offset = (page - 1) * limit;
+    
+    // Filter parameters
     const countries = searchParams.getAll('countries');
     const categories = searchParams.getAll('categories');
     const minPrice = parseInt(searchParams.get('minPrice') || '0');
     const maxPrice = parseInt(searchParams.get('maxPrice') || '100000');
     
-    // Build where conditions
+    // Build query conditions
     let whereCondition: any = {};
     
-    // Basic price filter - always use this
+    // Price filter
     whereCondition.price = {
       gte: minPrice,
       lte: maxPrice,
-      not: null, // Don't include products without a price
+      not: null,
     };
     
     // Country filter
     if (countries.length > 0) {
-      whereCondition.country = {
-        in: countries,
-      };
+      whereCondition.country = { in: countries };
     }
     
     // Category filter
     if (categories.length > 0) {
-      whereCondition.category = {
-        in: categories,
-      };
+      whereCondition.category = { in: categories };
     }
     
-    // Search filter - use a simpler approach with OR conditions
+    // Search filter
     if (search) {
       whereCondition.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -87,21 +61,32 @@ export async function GET(request: Request) {
       ];
     }
     
-    console.log('Executing query with conditions:', JSON.stringify(whereCondition));
+    // Get total count for pagination info
+    const totalCount = await prisma.products.count({
+      where: whereCondition
+    });
     
-    // Execute query with no pagination limits
+    // Execute paginated query
     const products = await prisma.products.findMany({
       where: whereCondition,
       orderBy: {
         [sortBy]: sortOrder
-      }
-      // No pagination limits
+      },
+      skip: offset,
+      take: limit
     });
     
-    console.log(`Found ${products.length} products matching criteria`);
-    
-    // Return response with cache headers
-    return NextResponse.json(products, {
+    // Return response with pagination metadata
+    return NextResponse.json({
+      products,
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        pages: Math.ceil(totalCount / limit),
+        hasMore: offset + products.length < totalCount
+      }
+    }, {
       headers: {
         'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300'
       }
@@ -109,27 +94,21 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('API error:', error);
     
-    // Detailed error logging
     if (error instanceof Error) {
       console.error('Error type:', error.name);
       console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
       
-      // Check for connection issues
       if (error.message.includes('database connection') || 
-          error.message.includes('timed out') ||
-          error.message.includes('Connection refused')) {
+          error.message.includes('timed out')) {
         return NextResponse.json(
           { error: 'Database Connection Error', details: error.message },
-          { status: 503 }  // Service Unavailable for connection issues
+          { status: 503 }
         );
       }
     }
     
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
     return NextResponse.json(
-      { error: 'Internal Server Error', details: errorMessage },
+      { error: 'Internal Server Error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

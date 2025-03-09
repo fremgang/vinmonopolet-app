@@ -31,9 +31,16 @@ export interface Product {
   imageMain: string;
 }
 
+interface PaginationInfo {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+  hasMore: boolean;
+}
+
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortBy, setSortBy] = useState('price');
@@ -45,8 +52,9 @@ export default function Home() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20; // For pagination
+  const [hasMore, setHasMore] = useState(true);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [page, setPage] = useState(1);
   
   // Filter state
   const [filters, setFilters] = useState({
@@ -55,6 +63,9 @@ export default function Home() {
     priceRange: [0, 100000] as [number, number]
   });
   
+  const LIMIT = 50; // Products per page
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loaderRef = useRef<HTMLDivElement | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
 
   // Debounce search input
@@ -68,33 +79,41 @@ export default function Home() {
   // Reset products when search or sort or filters change
   useEffect(() => {
     setProducts([]);
-    setCurrentPage(1);
-    setInitialLoading(true);
+    setPage(1);
+    setHasMore(true);
+    setPagination(null);
   }, [debouncedSearch, sortBy, sortOrder, filters]);
 
-  // This effect runs only once on component mount
+  // Initial and filter-change data fetch
   useEffect(() => {
-    fetchProducts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // This effect runs when dependencies that should trigger a refetch change
-  useEffect(() => {
-    // Skip the initial render
-    if (initialLoading) return;
-    
-    fetchProducts();
+    fetchProducts(1, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, sortBy, sortOrder, filters]);
 
-  // Update displayed products when current page changes
+  // Set up intersection observer for infinite scroll
   useEffect(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    setDisplayedProducts(products.slice(startIndex, endIndex));
-  }, [currentPage, products]);
+    if (!loaderRef.current) return;
 
-  const fetchProducts = useCallback(async () => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          loadMoreProducts();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observerRef.current.observe(loaderRef.current);
+
+    return () => {
+      if (observerRef.current && loaderRef.current) {
+        observerRef.current.unobserve(loaderRef.current);
+      }
+    };
+  }, [hasMore, loading]);
+
+  // Main fetch function
+  const fetchProducts = useCallback(async (pageNum: number, reset = false) => {
     if (loading) return;
     
     if (controllerRef.current) {
@@ -109,9 +128,12 @@ export default function Home() {
       const queryParams = new URLSearchParams({
         search: debouncedSearch,
         sortBy,
-        sortOrder
+        sortOrder,
+        page: pageNum.toString(),
+        limit: LIMIT.toString()
       });
       
+      // Add filter parameters
       if (filters.countries.length > 0) {
         filters.countries.forEach(country => {
           queryParams.append('countries', country);
@@ -141,14 +163,16 @@ export default function Home() {
       
       const data = await response.json();
       
-      if (!Array.isArray(data)) {
+      if (!data.products || !Array.isArray(data.products)) {
         throw new Error('API returned invalid data');
       }
       
-      setProducts(data);
-      // Initialize displayed products with the first page
-      setDisplayedProducts(data.slice(0, itemsPerPage));
-      setCurrentPage(1);
+      // Update pagination info
+      setPagination(data.pagination);
+      setHasMore(data.pagination.hasMore);
+      
+      // Update products list - either replace or append
+      setProducts(prev => reset ? data.products : [...prev, ...data.products]);
       setError(null);
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
@@ -159,17 +183,17 @@ export default function Home() {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [debouncedSearch, sortBy, sortOrder, loading, filters]);
+  }, [debouncedSearch, sortBy, sortOrder, filters, loading]);
 
-  // Clean up abort controllers on unmount
-  useEffect(() => {
-    return () => {
-      if (controllerRef.current) {
-        controllerRef.current.abort();
-      }
-    };
-  }, []);
+  // Load more products for infinite scroll
+  const loadMoreProducts = () => {
+    if (!hasMore || loading) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchProducts(nextPage);
+  };
 
+  // Handle sort change
   const handleSortChange = (value: string | string[]) => {
     const selectedValue = Array.isArray(value) ? value[0] : value;
     const [newSortBy, newSortOrder] = selectedValue.split(':');
@@ -177,6 +201,7 @@ export default function Home() {
     setSortOrder(newSortOrder);
   };
   
+  // Handle filter updates
   const handleUpdateFilters = (newFilters: Partial<typeof filters>) => {
     setFilters(prev => ({
       ...prev,
@@ -185,148 +210,22 @@ export default function Home() {
     setShowFilters(false);
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo(0, 0);
-  };
-
-  // List view header for table-like display
+  // List view table header
   const renderListHeader = () => {
     return (
       <div className="list-table-header mb-2">
-        <div className="col-span-1">
-          Image
-        </div>
-        <div className="col-span-3">
-          Name
-        </div>
-        <div className="col-span-2">
-          Category
-        </div>
-        <div className="col-span-1">
-          Country
-        </div>
-        <div className="col-span-2">
-          Type
-        </div>
-        <div className="col-span-1">
-          Price
-        </div>
-        <div className="col-span-2 text-right">
-          Availability
-        </div>
+        <div className="col-span-1">Image</div>
+        <div className="col-span-3">Name</div>
+        <div className="col-span-2">Category</div>
+        <div className="col-span-1">Country</div>
+        <div className="col-span-2">Type</div>
+        <div className="col-span-1">Price</div>
+        <div className="col-span-2 text-right">Availability</div>
       </div>
     );
   };
 
-  // Generate pagination controls
-  const renderPagination = () => {
-    const totalPages = Math.ceil(products.length / itemsPerPage);
-    if (totalPages <= 1) return null;
-    
-    return (
-      <div className="flex justify-center mt-8 mb-4">
-        <div className="flex space-x-2">
-          <Button 
-            auto 
-            disabled={currentPage === 1}
-            onClick={() => handlePageChange(currentPage - 1)}
-            onPointerEnterCapture={undefined}
-            onPointerLeaveCapture={undefined}
-            placeholder={undefined}
-          >
-            Previous
-          </Button>
-          
-          <div className="flex items-center space-x-2 px-2">
-            {currentPage > 1 && (
-              <Button 
-                auto 
-                type="abort" 
-                scale={2/3}
-                onClick={() => handlePageChange(1)}
-                onPointerEnterCapture={undefined}
-                onPointerLeaveCapture={undefined}
-                placeholder={undefined}
-              >
-                1
-              </Button>
-            )}
-            
-            {currentPage > 3 && <span>...</span>}
-            
-            {currentPage > 2 && (
-              <Button 
-                auto 
-                type="abort" 
-                scale={2/3}
-                onClick={() => handlePageChange(currentPage - 1)}
-                onPointerEnterCapture={undefined}
-                onPointerLeaveCapture={undefined}
-                placeholder={undefined}
-              >
-                {currentPage - 1}
-              </Button>
-            )}
-            
-            <Button 
-              auto 
-              type="success" 
-              scale={2/3}
-              onClick={() => handlePageChange(currentPage)}
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
-              placeholder={undefined}
-            >
-              {currentPage}
-            </Button>
-            
-            {currentPage < totalPages - 1 && (
-              <Button 
-                auto 
-                type="abort" 
-                scale={2/3}
-                onClick={() => handlePageChange(currentPage + 1)}
-                onPointerEnterCapture={undefined}
-                onPointerLeaveCapture={undefined}
-                placeholder={undefined}
-              >
-                {currentPage + 1}
-              </Button>
-            )}
-            
-            {currentPage < totalPages - 2 && <span>...</span>}
-            
-            {currentPage < totalPages && (
-              <Button 
-                auto 
-                type="abort" 
-                scale={2/3}
-                onClick={() => handlePageChange(totalPages)}
-                onPointerEnterCapture={undefined}
-                onPointerLeaveCapture={undefined}
-                placeholder={undefined}
-              >
-                {totalPages}
-              </Button>
-            )}
-          </div>
-          
-          <Button 
-            auto 
-            disabled={currentPage === totalPages}
-            onClick={() => handlePageChange(currentPage + 1)}
-            onPointerEnterCapture={undefined}
-            onPointerLeaveCapture={undefined}
-            placeholder={undefined}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
+  // Loading indicator
   if (initialLoading) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -408,7 +307,9 @@ export default function Home() {
       
       <div className="flex justify-between items-center mb-4">
         <Text p className="text-gray-600 dark:text-gray-300">
-          {products.length} products found
+          {pagination?.total || 0} products found
+          {products.length > 0 && pagination && products.length < pagination.total && 
+            ` (showing ${products.length})`}
         </Text>
         
         {(filters.countries.length > 0 || filters.categories.length > 0 || 
@@ -453,7 +354,7 @@ export default function Home() {
       {viewMode === 'grid' ? (
         // Grid View
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayedProducts.map(product => (
+          {products.map(product => (
             <ProductCard 
               key={product.product_id} 
               product={product} 
@@ -470,7 +371,7 @@ export default function Home() {
         <>
           {renderListHeader()}
           <div className="flex flex-col w-full">
-            {displayedProducts.map(product => (
+            {products.map(product => (
               <ProductCard 
                 key={product.product_id} 
                 product={product} 
@@ -485,20 +386,29 @@ export default function Home() {
         </>
       )}
       
-      {/* Pagination controls */}
-      {renderPagination()}
+      {/* Infinite scroll loader */}
+      {hasMore && (
+        <div 
+          ref={loaderRef} 
+          className="flex justify-center py-12"
+        >
+          {loading && <Loading>Loading more products...</Loading>}
+          {!loading && <div className="h-10" />}
+        </div>
+      )}
+      
+      {/* No more products indicator */}
+      {!hasMore && products.length > 0 && (
+        <div className="text-center py-8 text-gray-500">
+          End of results
+        </div>
+      )}
       
       <ProductDetailsModal 
         product={selectedProduct} 
         visible={modalOpen} 
         onClose={() => setModalOpen(false)} 
       />
-      
-      {loading && !initialLoading && (
-        <div className="flex justify-center my-8">
-          <Loading>Loading products...</Loading>
-        </div>
-      )}
       
       {!loading && products.length === 0 && (
         <div className="text-center py-16 bg-gray-50 dark:bg-gray-800 rounded-lg">
