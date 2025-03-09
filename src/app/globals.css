@@ -1,6 +1,9 @@
-/* src/app/globals.css updates */
+/* Tailwind CSS base styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Update the color palette for a more masculine, refined look */
+/* Custom CSS Variables for Theme Colors */
 :root {
   /* Deep burgundy for header */
   --header-bg: #2c1217;
@@ -29,6 +32,19 @@
   --card-border: #e7e5e4;
   --card-shadow: 0 1px 3px rgba(0,0,0,0.1);
   --card-hover-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  
+  /* Background */
+  --bg-color: #f5f5f4;
+  --cream: #f9f7f2;
+}
+
+/* Typography Refinements */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-serif tracking-tight;
+}
+
+body {
+  background-color: var(--bg-color);
 }
 
 /* Header styling */
@@ -152,7 +168,7 @@ header a, header svg {
   text-overflow: ellipsis;
 }
 
-.product-card-category {
+.product-card-category, .product-card-district {
   color: var(--neutral-600);
   max-width: 60%;
   overflow: hidden;
@@ -179,18 +195,53 @@ header a, header svg {
   text-overflow: ellipsis;
 }
 
-/* Button styling */
+/* Table-style list view */
+.product-table {
+  @apply w-full border-collapse text-sm;
+}
+
+.product-table-header {
+  @apply bg-neutral-50 text-left border-b border-neutral-200 sticky top-0 z-10;
+}
+
+.product-table-header th {
+  @apply px-4 py-3 font-semibold text-neutral-700;
+}
+
+.product-table-body tr {
+  @apply border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer transition-colors;
+}
+
+.product-table-body td {
+  @apply px-4 py-3 align-middle;
+}
+
+.product-image-cell {
+  @apply w-16;
+}
+
+.product-image {
+  @apply h-16 w-12 object-contain mx-auto;
+}
+
+.price-cell {
+  @apply font-bold text-wine-red;
+}
+
+/* Button Styles */
 .btn-primary {
-  background-color: var(--wine-red);
-  color: white;
-  transition: background-color 0.2s;
+  @apply bg-wine-red text-white hover:bg-wine-red-light transition-colors px-4 py-2 rounded-md;
 }
 
-.btn-primary:hover {
-  background-color: var(--wine-red-light);
+.btn-secondary {
+  @apply bg-neutral-100 text-neutral-800 hover:bg-neutral-200 transition-colors px-4 py-2 rounded-md;
 }
 
-/* Improved filters */
+.btn-outline {
+  @apply border border-wine-red text-wine-red hover:bg-neutral-50 transition-colors px-4 py-2 rounded-md;
+}
+
+/* Filter chips */
 .filter-chip {
   padding: 0.25rem 0.75rem;
   font-size: 0.875rem;
@@ -211,21 +262,41 @@ header a, header svg {
   color: white;
 }
 
-/* Badge styling */
+/* Badge styles */
 .badge {
-  font-size: 0.75rem;
-  padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
-  font-weight: 500;
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
 }
 
 .badge-availability {
-  background-color: var(--neutral-100);
-  color: var(--neutral-700);
+  @apply bg-neutral-100 text-neutral-700;
 }
 
-/* Better responsive behavior */
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-in-out;
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
+  .product-table-header .hide-mobile,
+  .product-table-body .hide-mobile {
+    @apply hidden;
+  }
+  
   .product-card-body {
     flex-direction: column;
   }
