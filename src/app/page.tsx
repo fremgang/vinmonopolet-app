@@ -12,7 +12,7 @@ import SplashScreen from '@/components/SplashScreen';
 import Image from 'next/image';
 import useProductCache from '@/hooks/useProductCache';
 import ImagePreloader from '@/components/ImagePreloader';
-import { Transition } from '@headlessui/react';
+import React from 'react';
 
 export interface Product {
   product_id: string;
@@ -81,6 +81,11 @@ export default function Home() {
   // Track visible products for preloading
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 0 });
   
+  // New states for improved scrolling and initial load tracking
+  const [visibleWindow, setVisibleWindow] = useState({ start: 0, end: 30 }); // Show only a window of items
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  
   // Filter state
   const [filters, setFilters] = useState({
     countries: [] as string[],
@@ -101,11 +106,67 @@ export default function Home() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loaderRef = useRef<HTMLDivElement | null>(null);
   
+  // Preload data during splash screen
+  const preloadData = useCallback(async () => {
+    try {
+      // Start fetching random data during splash screen
+      const queryParams = new URLSearchParams({
+        random: 'true',
+        limit: '50'
+      });
+      
+      // Prefetch random products (will be cached)
+      const response = await fetch(`/api/products?${queryParams.toString()}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Store the preloaded data to use when splash screen ends
+        setProducts(data.products);
+        setPagination(data.pagination);
+        setHasMore(data.pagination.hasMore);
+        
+        // Start loading product images
+        const imagePromises = data.products.slice(0, 9).map((product: { imageMain: any; }) => {
+          return new Promise((resolve) => {
+            const img = new window.Image();
+            img.onload = resolve;
+            img.onerror = resolve; // Still resolve on error to not block
+            img.src = product.imageMain;
+          });
+        });
+        
+        // Wait for the first few images to load
+        await Promise.allSettled(imagePromises);
+        
+        // Pre-load CSS, fonts, and other assets
+        const cssPromises = [
+          '/globals.css'
+        ].map(url => {
+          return new Promise((resolve) => {
+            const link = document.createElement('link');
+            link.rel = 'preload';
+            link.as = 'style';
+            link.href = url;
+            link.onload = resolve;
+            link.onerror = resolve; // Still resolve on error
+            document.head.appendChild(link);
+          });
+        });
+        
+        await Promise.allSettled(cssPromises);
+      }
+    } catch (err) {
+      console.error('Error during preload:', err);
+    }
+  }, []);
+  
   // Hide splash screen after timeout
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplashScreen(false);
-    }, 2000); // 2 seconds (reduced from 5 for better UX)
+      setInitialDataLoaded(true); // Mark data as loaded after splash screen
+      setProductTransitionState('loaded'); // Show products right away
+    }, 5000); // 5 seconds for better cold start experience
     
     return () => clearTimeout(timer);
   }, []);
@@ -120,13 +181,58 @@ export default function Home() {
 
   // Reset products when search or sort or filters change
   useEffect(() => {
-    setProducts([]);
-    setLoadedProducts(new Set());
-    setProductTransitionState('loading');
-    setPage(1);
-    setHasMore(true);
-    setPagination(null);
-  }, [debouncedSearch, sortBy, sortOrder, filters]);
+    if (initialDataLoaded) { // Only react to changes after initial load
+      setProducts([]);
+      setLoadedProducts(new Set());
+      setProductTransitionState('loading');
+      setPage(1);
+      setHasMore(true);
+      setPagination(null);
+    }
+  }, [debouncedSearch, sortBy, sortOrder, filters, initialDataLoaded]);
+
+  // Function to fetch random products
+  const fetchRandomProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Set loading state first
+      setProductTransitionState('loading');
+      
+      // Build query parameters for random products
+      const queryParams = new URLSearchParams({
+        random: 'true',
+        limit: '50'
+      });
+      
+      // Fetch random products
+      const response = await fetch(`/api/products?${queryParams.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch random products: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Update products list
+      setProducts(data.products);
+      setPagination(data.pagination);
+      setHasMore(data.pagination.hasMore);
+      
+      // After a short delay, transition to the loaded state
+      setTimeout(() => {
+        setProductTransitionState('loaded');
+      }, 300);
+      
+    } catch (err) {
+      console.error('Error loading random products:', err);
+      setError('Failed to load random products. Please try again.');
+    } finally {
+      setLoading(false);
+      setInitialLoading(false);
+    }
+  }, []);
 
   // Main fetch function using the cache
   const loadProducts = useCallback(async (pageNum: number, reset = false) => {
@@ -138,6 +244,11 @@ export default function Home() {
       
       // Set loading state first
       setProductTransitionState('loading');
+      
+      // Check if sorting by price - if so, ensure UI shows we're excluding N/A prices
+      if (sortBy === 'price') {
+        console.log('Filtering out products with N/A prices for price sort');
+      }
       
       // Fetch products using the cache
       const result = await fetchProducts(
@@ -186,12 +297,44 @@ export default function Home() {
     }
   }, [debouncedSearch, sortBy, sortOrder, filters, loading, fetchProducts, prefetchProducts]);
 
-  // Initial and filter-change data fetch
+  // Initial data fetch - fixed to avoid issues with sorting and randomization
   useEffect(() => {
-    if (!showSplashScreen) {
-      loadProducts(1, true);
+    if (!showSplashScreen && !initialDataLoaded) {
+      // Only randomize on very first page load with no search/sort criteria
+      const shouldUseRandom = 
+        !debouncedSearch && 
+        !filters.countries.length && 
+        !filters.categories.length && 
+        filters.priceRange[0] === 0 && 
+        filters.priceRange[1] === 100000 &&
+        sortBy === 'price' && // Only randomize with default sort
+        sortOrder === 'desc' && // Only randomize with default sort
+        !initialDataLoaded; // Only randomize if we haven't loaded data yet
+      
+      if (shouldUseRandom) {
+        // Load random products on first visit
+        fetchRandomProducts();
+        setInitialDataLoaded(true);
+      } else {
+        // Otherwise use normal search
+        loadProducts(1, true);
+        setInitialDataLoaded(true);
+      }
+    } else if (!showSplashScreen && initialDataLoaded) {
+      // For subsequent data loads based on search/filter/sort changes
+      // This separate condition prevents the random load from happening again
+      if (debouncedSearch || 
+          filters.countries.length || 
+          filters.categories.length || 
+          filters.priceRange[0] > 0 || 
+          filters.priceRange[1] < 100000 ||
+          sortBy !== 'price' ||
+          sortOrder !== 'desc') {
+        
+        loadProducts(1, true);
+      }
     }
-  }, [debouncedSearch, sortBy, sortOrder, filters, loadProducts, showSplashScreen]);
+  }, [debouncedSearch, sortBy, sortOrder, filters, loadProducts, showSplashScreen, initialDataLoaded, fetchRandomProducts]);
 
   // Load more products
   const loadMoreProducts = useCallback(() => {
@@ -234,6 +377,39 @@ export default function Home() {
       }
     };
   }, [hasMore, loading, loadMoreProducts]);
+
+  // Handle scrolling for virtualized list
+  useEffect(() => {
+    // Function to handle scroll events
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      setScrollPosition(scrollY);
+      
+      // Calculate which items should be visible based on scroll position
+      // These numbers are estimates and may need tuning based on your card height
+      const cardHeight = 350; // Approximate height of a card in pixels
+      const rowsPerScreen = Math.ceil(window.innerHeight / cardHeight) + 1;
+      const buffer = rowsPerScreen * 2; // Extra buffer for smooth scrolling
+      
+      const scrollItemIndex = Math.floor(scrollY / cardHeight) * 3; // For 3 items per row
+      const startVisible = Math.max(0, scrollItemIndex - buffer * 3);
+      const endVisible = scrollItemIndex + rowsPerScreen * 3 + buffer * 3;
+      
+      setVisibleWindow({
+        start: startVisible,
+        end: endVisible
+      });
+    };
+    
+    // Attach scroll event listener
+    window.addEventListener('scroll', handleScroll);
+    // Initial calculation
+    handleScroll();
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   // Track visible products for preloading
   useEffect(() => {
@@ -308,7 +484,7 @@ export default function Home() {
 
   // Render splash screen if showing
   if (showSplashScreen) {
-    return <SplashScreen />;
+    return <SplashScreen onPreload={preloadData} />;
   }
 
   return (
@@ -462,13 +638,40 @@ export default function Home() {
       
       {/* Product Grid/List Display with Skeleton Loading and Transition Effects */}
       {viewMode === 'grid' ? (
-        // Grid View with skeleton loading
+        // Grid View with improved skeleton loading and virtualization
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {initialLoading ? (
+          {initialLoading && (
             // Show skeleton cards during initial loading
-            SkeletonArray
-          ) : (
-            products.map(product => (
+            <React.Fragment>
+              {SkeletonArray}
+            </React.Fragment>
+          )}
+          
+          {!initialLoading && products.map((product, index) => {
+            // Create placeholder divs for items outside visible window to maintain scroll height
+            if (index < visibleWindow.start || index > visibleWindow.end) {
+              return (
+                <div 
+                  key={product.product_id}
+                  className="h-[350px]" // Approximate height of a card
+                />
+              );
+            }
+            
+            // Check if product is at the edge of our window - if so, render skeleton
+            const isEdgeItem = (index >= visibleWindow.end - 9 && index <= visibleWindow.end) || 
+                               (index >= visibleWindow.start && index <= visibleWindow.start + 9);
+                              
+            if (isEdgeItem && productTransitionState === 'loading') {
+              return (
+                <div key={`skeleton-edge-${index}`} className="h-full">
+                  <SkeletonProductCard />
+                </div>
+              );
+            }
+            
+            // Render normal product
+            return (
               <div 
                 key={product.product_id}
                 className={`h-full transition-opacity duration-300 ${
@@ -483,8 +686,8 @@ export default function Home() {
                   }}
                 />
               </div>
-            ))
-            )}
+            );
+          })}
           
           {/* Show skeleton cards at the end during "load more" */}
           {loading && !initialLoading && hasMore && (
@@ -535,34 +738,68 @@ export default function Home() {
                   </tr>
                 ))
               ) : (
-                products.map(product => (
-                  <tr 
-                    key={product.product_id}
-                    className={`border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer transition-colors ${
-                      productTransitionState === 'loaded' ? 'opacity-100' : 'opacity-0'
-                    }`}
-                    onClick={() => {
-                      setSelectedProduct(product);
-                      setModalOpen(true);
-                    }}
-                  >
+                // Show actual product rows with fade-in transition
+                products.map((product, index) => {
+                  // Skip rendering for products outside the visible window
+                  if (index < visibleWindow.start || index > visibleWindow.end) {
+                    return null;
+                  }
+                  
+                  return (
+                    <tr 
+                      key={product.product_id}
+                      className={`border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer transition-colors ${
+                        productTransitionState === 'loaded' ? 'opacity-100' : 'opacity-0'
+                      }`}
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setModalOpen(true);
+                      }}
+                    >
+                      <td className="p-4">
+                        <div className="w-10 h-14 relative">
+                          <Image 
+                            src={product.imageSmall} 
+                            alt={product.name}
+                            fill
+                            className="object-contain"
+                            unoptimized={product.imageSmall.includes('vinmonopolet.no')}
+                          />
+                        </div>
+                      </td>
+                      <td className="p-4 font-medium text-neutral-800">{product.name}</td>
+                      <td className="p-4 text-neutral-600 hidden md:table-cell">{product.category || '—'}</td>
+                      <td className="p-4 text-neutral-600 hidden md:table-cell">{product.country || '—'}</td>
+                      <td className="p-4 font-bold text-wine-red">{formatPrice(product.price)}</td>
+                      <td className="p-4 text-right">
+                        <span className="badge badge-availability">{product.utvalg || '—'}</span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+              
+              {/* Add skeleton rows at the end for loading more */}
+              {loading && !initialLoading && hasMore && (
+                Array(3).fill(0).map((_, i) => (
+                  <tr key={`skeleton-more-list-${i}`} className="border-b border-neutral-100">
                     <td className="p-4">
-                      <div className="w-10 h-14 relative">
-                        <Image 
-                          src={product.imageSmall} 
-                          alt={product.name}
-                          fill
-                          className="object-contain"
-                          unoptimized={product.imageSmall.includes('vinmonopolet.no')}
-                        />
-                      </div>
+                      <div className="w-10 h-14 bg-neutral-200 rounded animate-pulse" />
                     </td>
-                    <td className="p-4 font-medium text-neutral-800">{product.name}</td>
-                    <td className="p-4 text-neutral-600 hidden md:table-cell">{product.category || '—'}</td>
-                    <td className="p-4 text-neutral-600 hidden md:table-cell">{product.country || '—'}</td>
-                    <td className="p-4 font-bold text-wine-red">{formatPrice(product.price)}</td>
+                    <td className="p-4">
+                      <div className="h-5 bg-neutral-200 rounded w-4/5 animate-pulse" />
+                    </td>
+                    <td className="p-4 hidden md:table-cell">
+                      <div className="h-4 bg-neutral-200 rounded w-2/3 animate-pulse" />
+                    </td>
+                    <td className="p-4 hidden md:table-cell">
+                      <div className="h-4 bg-neutral-200 rounded w-1/2 animate-pulse" />
+                    </td>
+                    <td className="p-4">
+                      <div className="h-5 bg-neutral-200 rounded w-20 animate-pulse" />
+                    </td>
                     <td className="p-4 text-right">
-                      <span className="badge badge-availability">{product.utvalg || '—'}</span>
+                      <div className="h-4 bg-neutral-200 rounded w-16 ml-auto animate-pulse" />
                     </td>
                   </tr>
                 ))

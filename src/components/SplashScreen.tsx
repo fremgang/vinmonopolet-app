@@ -6,17 +6,34 @@ import { Text } from '@geist-ui/core';
 interface SplashScreenProps {
   redirectPath?: string;
   loadingTime?: number; // in seconds
+  onPreload?: () => Promise<void>; // Add a preload callback
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({
   redirectPath = '/',
-  loadingTime = 5
+  loadingTime = 5, // Default 5 seconds
+  onPreload = async () => {} // Default empty function
 }) => {
   const router = useRouter();
   const [countdown, setCountdown] = useState(loadingTime);
   const [fillPercent, setFillPercent] = useState(0);
+  const [preloadComplete, setPreloadComplete] = useState(false);
 
   useEffect(() => {
+    // Start preloading data immediately
+    const startPreload = async () => {
+      try {
+        await onPreload();
+        setPreloadComplete(true);
+      } catch (error) {
+        console.error('Error during preload:', error);
+        // Still mark as complete so we don't block the app
+        setPreloadComplete(true);
+      }
+    };
+    
+    startPreload();
+    
     // Calculate how much to fill per interval (100% divided by total seconds * 10 for smoothness)
     const fillPerInterval = 100 / (loadingTime * 10);
     
@@ -42,7 +59,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
       });
     }, 100); // 10 times per second
     
-    // Redirect after loading time
+    // Redirect after loading time - ENSURING a full 5 seconds passes
     const redirectTimeout = setTimeout(() => {
       router.push(redirectPath);
     }, loadingTime * 1000);
@@ -52,7 +69,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
       clearInterval(fillInterval);
       clearTimeout(redirectTimeout);
     };
-  }, [loadingTime, redirectPath, router]);
+  }, [loadingTime, redirectPath, router, onPreload]);
 
   return (
     <div className="fixed inset-0 bg-neutral-50 flex flex-col items-center justify-center z-50">
@@ -78,16 +95,20 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
               {/* Stem and Base */}
               <path d="M50,80 L50,120 M30,130 L70,130" stroke="#8c1c13" />
               
-              {/* Glass */}
+              {/* Glass Bowl */}
               <path d="M20,20 Q20,80 50,80 Q80,80 80,20" stroke="#8c1c13" />
             </svg>
             
-            {/* Wine Fill */}
+            {/* Improved Wine Fill - better matches glass shape */}
             <div 
-              className="absolute bottom-14 left-5 right-5 bg-wine-red transition-all duration-100 ease-linear rounded-b-full overflow-hidden"
+              className="absolute bg-wine-red transition-all duration-100 ease-linear rounded-b-full overflow-hidden"
               style={{ 
-                height: `${fillPercent * 0.6}%`,
-                maxHeight: '60%',
+                bottom: '60px', // Positioned at bottom of bowl
+                left: '25px',   // Aligned with left of bowl
+                right: '25px',  // Aligned with right of bowl
+                borderRadius: '0 0 100% 100%', // Curved bottom like a wine
+                height: `${Math.min(fillPercent * 0.6, 60)}px`, // Scale to max height
+                maxHeight: '60px', // Max height of wine
                 opacity: 0.9
               }}
             />
@@ -97,6 +118,12 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
         <Text className="text-neutral-600">
           Ready in <span className="font-bold text-wine-red">{countdown}</span> seconds...
         </Text>
+        
+        {preloadComplete && (
+          <Text small className="text-green-600 mt-2">
+            Resources loaded, preparing your experience...
+          </Text>
+        )}
       </div>
     </div>
   );

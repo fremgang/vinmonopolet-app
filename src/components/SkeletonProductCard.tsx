@@ -11,7 +11,7 @@ const SkeletonProductCard: React.FC<SkeletonProductCardProps> = ({
   const animationClass = animated ? 'animate-pulse' : '';
   
   return (
-    <div className="product-card h-full">
+    <div className="product-card h-full shadow-sm border border-neutral-200 bg-white">
       {/* Card Header with Skeleton Title */}
       <div className="product-card-header">
         <div className={`h-6 bg-neutral-200 rounded-md w-4/5 mx-auto ${animationClass}`} />
@@ -21,7 +21,7 @@ const SkeletonProductCard: React.FC<SkeletonProductCardProps> = ({
       <div className="product-card-body">
         {/* Skeleton Image Container */}
         <div className="product-card-image-container">
-          <div className={`w-full h-full bg-neutral-200 rounded-md ${animationClass}`} />
+          <div className={`w-24 h-36 mx-auto bg-neutral-200 rounded-md ${animationClass}`} />
         </div>
 
         {/* Skeleton Content Section */}
