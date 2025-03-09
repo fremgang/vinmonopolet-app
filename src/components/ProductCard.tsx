@@ -61,7 +61,7 @@ export default function ProductCard({ product, isGrid = true, onClick }: Product
               </span>
             )}
             {country && (
-              <span className="inline-block px-2 py-1 text-xs rounded-full bg-congo-brown-200 dark:bg-congo-brown-800 text-congo-brown-700 dark:text-congo-brown-100">
+              <span className="inline-block px-2 py-1 text-xs rounded-full bg-congo-brown-200 dark:bg-congo-brown-800 text-congo-brown-800 dark:text-congo-brown-100">
                 {country}
               </span>
             )}
@@ -73,7 +73,7 @@ export default function ProductCard({ product, isGrid = true, onClick }: Product
                 {utvalg}
               </span>
             )}
-            <div className="text-lg font-bold text-congo-brown-700 dark:text-congo-brown-300 ml-auto">
+            <div className="text-lg font-bold text-congo-brown-800 dark:text-congo-brown-300 ml-auto">
               {formatPrice(price)}
             </div>
           </div>

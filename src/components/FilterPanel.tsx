@@ -103,7 +103,7 @@ export default function FilterPanel({
     <div className="p-5">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-serif font-semibold flex items-center">
-          <Filter size={18} className="mr-2 text-congo-brown-600" /> 
+          <Filter size={18} className="mr-2 text-congo-brown-700" /> 
           Filters
           {activeFilterCount > 0 && (
             <Badge type="warning" className="ml-2">{activeFilterCount}</Badge>
@@ -131,7 +131,7 @@ export default function FilterPanel({
                   className={`
                     px-3 py-1 text-sm rounded-full transition-colors
                     ${selectedCountries.includes(country) 
-                      ? 'bg-congo-brown-600 text-white' 
+                      ? 'bg-congo-brown-800 text-white' 
                       : 'bg-congo-brown-100 text-congo-brown-800 dark:bg-congo-brown-800 dark:text-congo-brown-100 hover:bg-congo-brown-200 dark:hover:bg-congo-brown-700'}
                   `}
                 >
@@ -163,7 +163,7 @@ export default function FilterPanel({
                   className={`
                     px-3 py-1 text-sm rounded-full transition-colors
                     ${selectedCategories.includes(category) 
-                      ? 'bg-congo-brown-500 text-white' 
+                      ? 'bg-congo-brown-700 text-white' 
                       : 'bg-congo-brown-100 text-congo-brown-800 dark:bg-congo-brown-800 dark:text-congo-brown-100 hover:bg-congo-brown-200 dark:hover:bg-congo-brown-700'}
                   `}
                 >
@@ -217,8 +217,8 @@ export default function FilterPanel({
           auto
           type="success"
           style={{
-            backgroundColor: 'var(--congo-brown-600)',
-            borderColor: 'var(--congo-brown-700)'
+            backgroundColor: 'var(--congo-brown-800)',
+            borderColor: 'var(--congo-brown-900)'
           }}
           onClick={handleApplyFilters}
           className={activeFilterCount > 0 ? "flex-1" : "w-full"} 
