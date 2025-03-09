@@ -84,43 +84,7 @@ export default function Home() {
     setPagination(null);
   }, [debouncedSearch, sortBy, sortOrder, filters]);
 
-  // Initial and filter-change data fetch
-  useEffect(() => {
-    fetchProducts(1, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, sortBy, sortOrder, filters]);
-
-  // Load more products for infinite scroll
-  const loadMoreProducts = useCallback(() => {
-    if (!hasMore || loading) return;
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchProducts(nextPage);
-  }, [hasMore, loading, page, fetchProducts]);
-
-  // Set up intersection observer for infinite scroll
-  useEffect(() => {
-    if (!loaderRef.current) return;
-    
-    const currentLoaderRef = loaderRef.current;
-    
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          loadMoreProducts();
-        }
-      },
-      { threshold: 0.1 }
-    );
-    
-    observer.observe(currentLoaderRef);
-    
-    return () => {
-      observer.unobserve(currentLoaderRef);
-    };
-  }, [hasMore, loading, loadMoreProducts]);
-
-  // Main fetch function
+  // Main fetch function - DEFINE THIS FIRST
   const fetchProducts = useCallback(async (pageNum: number, reset = false) => {
     if (loading) return;
     
@@ -192,6 +156,42 @@ export default function Home() {
       setInitialLoading(false);
     }
   }, [debouncedSearch, sortBy, sortOrder, filters, loading]);
+
+  // Initial and filter-change data fetch
+  useEffect(() => {
+    fetchProducts(1, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, sortBy, sortOrder, filters]);
+
+  // Load more products for infinite scroll - DEFINE THIS SECOND
+  const loadMoreProducts = useCallback(() => {
+    if (!hasMore || loading) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchProducts(nextPage);
+  }, [hasMore, loading, page, fetchProducts]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (!loaderRef.current) return;
+    
+    const currentLoaderRef = loaderRef.current;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          loadMoreProducts();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    
+    observer.observe(currentLoaderRef);
+    
+    return () => {
+      observer.unobserve(currentLoaderRef);
+    };
+  }, [hasMore, loading, loadMoreProducts]);
 
   // Handle sort change
   const handleSortChange = (value: string | string[]) => {
