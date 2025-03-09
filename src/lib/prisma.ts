@@ -1,8 +1,3 @@
-// src/lib/prisma.ts
-import { PrismaClient } from '@prisma/client/edge';
-// import { withOptimize } from '@prisma/extension-optimize';
+import { Prisma } from '@prisma/client/edge';
+import { PrismaClient } from '@prisma/client';
 import { withAccelerate } from '@prisma/extension-accelerate';
-
-const prisma = new PrismaClient().$extends(withAccelerate())
-
-export { prisma };

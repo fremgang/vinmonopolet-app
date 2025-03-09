@@ -6,7 +6,17 @@ import type { Metadata } from 'next';
 import { Montserrat, Playfair_Display } from 'next/font/google';
 import { ProductStreamProvider } from '@/components/ProductStreamProvider';
 import LiveUpdates from '@/components/LiveUpdates';
+
+
+
 import './globals.css';
+import { PrismaClient } from '@prisma/client/edge';
+import { withAccelerate } from '@prisma/extension-accelerate';
+
+
+const prisma = new PrismaClient().$extends(withAccelerate());
+
+export { prisma };
 
 // Font configuration using Next.js 13+ font optimization
 const montserrat = Montserrat({
