@@ -76,7 +76,11 @@ header a, header svg {
 
 .product-card-header {
   padding: 1rem;
-  border-bottom: 1px solid var(--card-border);
+  /* Remove the border-bottom */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 5rem; /* Fixed height for consistent alignment */
 }
 
 .product-card-title {
@@ -91,7 +95,7 @@ header a, header svg {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   text-overflow: ellipsis;
-  height: 2.6em;
+  text-align: center; /* Center the text horizontally */
 }
 
 .product-card-body {
