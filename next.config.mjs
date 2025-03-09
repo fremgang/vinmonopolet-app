@@ -11,6 +11,14 @@ const nextConfig = {
       },
     ],
   },
+  experimental: {
+    // Use Turbopack instead of webpack
+    turbo: {
+      rules: {
+        // Opt-out specific import formats
+      }
+    },
+  },
 };
 
 export default nextConfig;
