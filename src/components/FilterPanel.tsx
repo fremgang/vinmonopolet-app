@@ -97,7 +97,7 @@ export default function FilterPanel({
     <div className="p-5">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-serif font-semibold flex items-center">
-          <Filter size={18} className="mr-2 text-burgundy-700" /> 
+          <Filter size={18} className="mr-2 text-wine-700" /> 
           Filters
           {activeFilterCount > 0 && (
             <Badge type="warning" className="ml-2">{activeFilterCount}</Badge>
@@ -125,7 +125,7 @@ export default function FilterPanel({
                   className={`
                     px-3 py-1 text-sm rounded-full transition-colors
                     ${selectedCountries.includes(country) 
-                      ? 'bg-burgundy-700 text-white' 
+                      ? 'bg-wine-700 text-white' 
                       : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}
                   `}
                 >
