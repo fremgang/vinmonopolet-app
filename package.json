@@ -16,6 +16,7 @@
   "dependencies": {
     "@geist-ui/core": "^2.3.8",
     "@prisma/client": "^6.4.1",
+    "@prisma/extension-accelerate": "^1.2.2",
     "@prisma/extension-pulse": "^1.2.2",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",

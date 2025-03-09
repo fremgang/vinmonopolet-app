@@ -4,10 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate --no-engine && next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate --no-engine",
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",
@@ -16,6 +16,7 @@
   "dependencies": {
     "@geist-ui/core": "^2.3.8",
     "@prisma/client": "^6.4.1",
+    "@prisma/extension-accelerate": "^0.6.0",
     "@prisma/extension-pulse": "^1.2.2",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
