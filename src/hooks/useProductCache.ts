@@ -1,4 +1,4 @@
-// src/hooks/useProductCache.ts
+// src/hooks/useProductCache.ts - Improved version with better caching
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Product } from '@/app/page';
 
@@ -21,7 +21,8 @@ interface ProductResponse {
 
 // Number of products to prefetch ahead of current view
 const PREFETCH_COUNT = 100;
-const CACHE_EXPIRY = 1000 * 60 * 5; // 5 minutes
+const CACHE_EXPIRY = 1000 * 60 * 15; // 15 minutes
+const CACHE_STORAGE_KEY = 'vinmonopolet-product-cache-v2'; // Versioned cache key
 
 export default function useProductCache() {
   // In-memory cache state
@@ -40,35 +41,55 @@ export default function useProductCache() {
   // Initialize with cached data from localStorage if available
   useEffect(() => {
     try {
-      const savedCache = localStorage.getItem('productCache');
+      const savedCache = localStorage.getItem(CACHE_STORAGE_KEY);
       if (savedCache) {
         const parsedCache = JSON.parse(savedCache) as CacheState;
         
         // Only use cache if it's not expired
         if (Date.now() - parsedCache.lastUpdated < CACHE_EXPIRY) {
           setCurrentCache(parsedCache);
-          console.log('Loaded cache from localStorage');
+          console.log('Loaded cache from localStorage', {
+            cacheEntries: Object.keys(parsedCache.products).length,
+            totalProducts: Object.values(parsedCache.products).reduce((acc, arr) => acc + arr.length, 0)
+          });
         } else {
           console.log('Cache expired, creating fresh cache');
+          localStorage.removeItem(CACHE_STORAGE_KEY);
         }
       }
     } catch (err) {
       console.error('Error loading cache from localStorage:', err);
+      localStorage.removeItem(CACHE_STORAGE_KEY);
     }
   }, []);
 
   // Save cache to localStorage when it changes
+  // Using debounce to prevent excessive writes
   useEffect(() => {
-    try {
-      localStorage.setItem('productCache', JSON.stringify(currentCache));
-    } catch (err) {
-      console.error('Error saving cache to localStorage:', err);
-    }
+    const saveTimer = setTimeout(() => {
+      try {
+        // Only save if we have products
+        if (Object.keys(currentCache.products).length > 0) {
+          localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(currentCache));
+        }
+      } catch (err) {
+        console.error('Error saving cache to localStorage:', err);
+      }
+    }, 1000); // Debounce for 1 second
+    
+    return () => clearTimeout(saveTimer);
   }, [currentCache]);
 
-  // Generate cache key from query parameters
+  // Generate normalized cache key from query parameters
   const getCacheKey = (params: URLSearchParams) => {
-    return params.toString();
+    // Clone the params to avoid modifying the original
+    const normalizedParams = new URLSearchParams(params.toString());
+    
+    // Ensure params are in consistent order
+    return Array.from(normalizedParams.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([key, value]) => `${key}=${value}`)
+      .join('&');
   };
 
   // Fetch products with caching
@@ -83,10 +104,14 @@ export default function useProductCache() {
     const queryParams = new URLSearchParams({
       page: page.toString(),
       limit: '50', // Standard limit per page
-      search: searchTerm,
       sortBy,
       sortOrder,
     });
+    
+    // Only add search if it's not empty
+    if (searchTerm.trim()) {
+      queryParams.set('search', searchTerm.trim());
+    }
     
     // Add filter parameters
     if (filters.countries?.length > 0) {
@@ -136,12 +161,15 @@ export default function useProductCache() {
     // Check if we have cached data for this query
     if (currentCache.products[cacheKey] && 
         currentCache.metadata[cacheKey] && 
-        Date.now() - currentCache.lastUpdated < CACHE_EXPIRY) {
+        Date.now() - currentCache.metadata[cacheKey].fetchedAt < CACHE_EXPIRY) {
+      console.log(`Cache hit for ${cacheKey}`);
       return {
         products: currentCache.products[cacheKey],
         pagination: currentCache.metadata[cacheKey].pagination
       };
     }
+    
+    console.log(`Cache miss for ${cacheKey}, fetching from API`);
     
     // Mark as fetching
     fetchingRef.current.add(cacheKey);
@@ -158,7 +186,11 @@ export default function useProductCache() {
       
       // Fetch data from API
       const response = await fetch(`/api/products?${queryParams.toString()}`, {
-        signal: abortControllersRef.current[cacheKey].signal
+        signal: abortControllersRef.current[cacheKey].signal,
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache' // Prevent browser caching
+        }
       });
       
       if (!response.ok) {
@@ -167,6 +199,8 @@ export default function useProductCache() {
       }
       
       const data = await response.json() as ProductResponse;
+      
+      console.log(`Fetched ${data.products.length} products out of ${data.pagination.total} total`);
       
       // Update cache with fetched data
       setCurrentCache(prev => ({
@@ -221,11 +255,15 @@ export default function useProductCache() {
     // Create query for the prefetch
     const queryParams = new URLSearchParams({
       page: nextPage.toString(),
-      limit: PREFETCH_COUNT.toString(), // Prefetch more products at once
-      search: searchTerm,
+      limit: '50', // Standard prefetch amount
       sortBy,
       sortOrder,
     });
+    
+    // Only add search if it's not empty
+    if (searchTerm.trim()) {
+      queryParams.set('search', searchTerm.trim());
+    }
     
     // Add filter parameters
     if (filters.countries?.length > 0) {
@@ -257,6 +295,7 @@ export default function useProductCache() {
     
     // Mark as fetching
     fetchingRef.current.add(cacheKey);
+    console.log(`Prefetching page ${nextPage}`);
     
     try {
       // Create abort controller for this request
@@ -268,7 +307,11 @@ export default function useProductCache() {
       // Prefetch with lower priority
       const response = await fetch(`/api/products?${queryParams.toString()}`, {
         signal: abortControllersRef.current[cacheKey].signal,
-        priority: 'low' as any // Lower priority for prefetch
+        priority: 'low' as any, // Lower priority for prefetch
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
       });
       
       if (!response.ok) {
@@ -324,7 +367,8 @@ export default function useProductCache() {
         metadata: {},
         lastUpdated: Date.now()
       });
-      localStorage.removeItem('productCache');
+      localStorage.removeItem(CACHE_STORAGE_KEY);
+      console.log('Cache cleared');
     }
   };
 }

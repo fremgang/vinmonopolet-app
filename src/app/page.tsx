@@ -468,32 +468,23 @@ export default function Home() {
             // Show skeleton cards during initial loading
             SkeletonArray
           ) : (
-            // Show actual product cards with fade-in transition
             products.map(product => (
               <div 
                 key={product.product_id}
-                className="h-full transition-opacity duration-300"
+                className={`h-full transition-opacity duration-300 ${
+                  productTransitionState === 'loaded' ? 'opacity-100' : 'opacity-0'
+                }`}
               >
-                <Transition
-                  show={productTransitionState === 'loaded'}
-                  enter="transition-opacity duration-300"
-                  enterFrom="opacity-0"
-                  enterTo="opacity-100"
-                  leave="transition-opacity duration-150"
-                  leaveFrom="opacity-100"
-                  leaveTo="opacity-0"
-                >
-                  <ProductCard 
-                    product={product}
-                    onClick={() => {
-                      setSelectedProduct(product);
-                      setModalOpen(true);
-                    }}
-                  />
-                </Transition>
+                <ProductCard 
+                  product={product}
+                  onClick={() => {
+                    setSelectedProduct(product);
+                    setModalOpen(true);
+                  }}
+                />
               </div>
             ))
-          )}
+            )}
           
           {/* Show skeleton cards at the end during "load more" */}
           {loading && !initialLoading && hasMore && (
@@ -544,45 +535,36 @@ export default function Home() {
                   </tr>
                 ))
               ) : (
-                // Show actual product rows with fade-in transition
                 products.map(product => (
-                  <Transition
+                  <tr 
                     key={product.product_id}
-                    show={productTransitionState === 'loaded'}
-                    enter="transition-opacity duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="transition-opacity duration-150"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
+                    className={`border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer transition-colors ${
+                      productTransitionState === 'loaded' ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    onClick={() => {
+                      setSelectedProduct(product);
+                      setModalOpen(true);
+                    }}
                   >
-                    <tr 
-                      onClick={() => {
-                        setSelectedProduct(product);
-                        setModalOpen(true);
-                      }}
-                      className="border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer transition-colors"
-                    >
-                      <td className="p-4">
-                        <div className="w-10 h-14 relative">
-                          <Image 
-                            src={product.imageSmall} 
-                            alt={product.name}
-                            fill
-                            className="object-contain"
-                            unoptimized={product.imageSmall.includes('vinmonopolet.no')}
-                          />
-                        </div>
-                      </td>
-                      <td className="p-4 font-medium text-neutral-800">{product.name}</td>
-                      <td className="p-4 text-neutral-600 hidden md:table-cell">{product.category || '—'}</td>
-                      <td className="p-4 text-neutral-600 hidden md:table-cell">{product.country || '—'}</td>
-                      <td className="p-4 font-bold text-wine-red">{formatPrice(product.price)}</td>
-                      <td className="p-4 text-right">
-                        <span className="badge badge-availability">{product.utvalg || '—'}</span>
-                      </td>
-                    </tr>
-                  </Transition>
+                    <td className="p-4">
+                      <div className="w-10 h-14 relative">
+                        <Image 
+                          src={product.imageSmall} 
+                          alt={product.name}
+                          fill
+                          className="object-contain"
+                          unoptimized={product.imageSmall.includes('vinmonopolet.no')}
+                        />
+                      </div>
+                    </td>
+                    <td className="p-4 font-medium text-neutral-800">{product.name}</td>
+                    <td className="p-4 text-neutral-600 hidden md:table-cell">{product.category || '—'}</td>
+                    <td className="p-4 text-neutral-600 hidden md:table-cell">{product.country || '—'}</td>
+                    <td className="p-4 font-bold text-wine-red">{formatPrice(product.price)}</td>
+                    <td className="p-4 text-right">
+                      <span className="badge badge-availability">{product.utvalg || '—'}</span>
+                    </td>
+                  </tr>
                 ))
               )}
             </tbody>

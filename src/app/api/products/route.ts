@@ -33,11 +33,20 @@ export async function GET(request: Request) {
     const where: any = {};
     
     if (search) {
+      // Improve search to match multiple fields and use case-insensitive search
       where.OR = [
+        // Use contains for more flexible matching
         { name: { contains: search, mode: 'insensitive' } },
         { category: { contains: search, mode: 'insensitive' } },
         { producer: { contains: search, mode: 'insensitive' } },
-        { country: { contains: search, mode: 'insensitive' } }
+        { country: { contains: search, mode: 'insensitive' } },
+        // Add district to search criteria
+        { district: { contains: search, mode: 'insensitive' } },
+        // Add sub_district to search criteria
+        { sub_district: { contains: search, mode: 'insensitive' } },
+        // Also search in description fields
+        { lukt: { contains: search, mode: 'insensitive' } },
+        { smak: { contains: search, mode: 'insensitive' } }
       ];
     }
     
@@ -84,6 +93,9 @@ export async function GET(request: Request) {
     // Add cache headers for performance
     const headers = new Headers();
     headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
+    
+    // Log search metrics for debugging (can be removed in production)
+    console.log(`Search: "${search}" found ${totalCount} products`);
     
     return NextResponse.json({
       products,
