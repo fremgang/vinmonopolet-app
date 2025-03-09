@@ -1,10 +1,10 @@
-// src/app/api/products/route.ts
+// src/app/api/products/route.ts - Updated with enhanced caching
 import { PrismaClient } from '@prisma/client/edge';
 import { withAccelerate } from '@prisma/extension-accelerate';
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 
-// Initialize Prisma client properly inside the route handler
-// This ensures a fresh connection for each request
+// Initialize Prisma client with accelerate extension
 const prisma = new PrismaClient().$extends(withAccelerate());
 
 // Define valid sort options
@@ -12,9 +12,58 @@ const validSortFields = ['product_id', 'name', 'price', 'category', 'country', '
 const validSortOrders = ['asc', 'desc'] as const;
 type SortOrder = typeof validSortOrders[number];
 
+// Cache time constants (in seconds)
+const CACHE_SHORT = 60 * 5;       // 5 minutes
+const CACHE_MEDIUM = 60 * 60;     // 1 hour
+const CACHE_LONG = 60 * 60 * 24;  // 24 hours
+const CACHE_REVALIDATE = 60 * 30; // 30 minutes
+
+// In-memory cache for quick responses
+const responseCache = new Map<string, { data: any, timestamp: number }>();
+
+// Generate cache key from search params
+function generateCacheKey(params: URLSearchParams): string {
+  return `products-${
+    params.get('search') || ''
+  }-${
+    params.get('sortBy') || 'price'
+  }-${
+    params.get('sortOrder') || 'desc'
+  }-${
+    params.get('page') || '1'
+  }-${
+    params.get('limit') || '50'
+  }-${
+    params.getAll('countries').join(',')
+  }-${
+    params.getAll('categories').join(',')
+  }-${
+    params.get('minPrice') || '0'
+  }-${
+    params.get('maxPrice') || '100000'
+  }`;
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+    
+    // Generate cache key for this specific request
+    const cacheKey = generateCacheKey(searchParams);
+    
+    // Check for cached response
+    const cachedResponse = responseCache.get(cacheKey);
+    if (cachedResponse && (Date.now() - cachedResponse.timestamp < CACHE_SHORT * 1000)) {
+      // Return cached response if it's still fresh
+      console.log(`Cache hit for ${cacheKey}`);
+      return NextResponse.json(cachedResponse.data, {
+        headers: {
+          'Cache-Control': `public, max-age=${CACHE_SHORT}, s-maxage=${CACHE_MEDIUM}, stale-while-revalidate=${CACHE_REVALIDATE}`,
+          'X-Cache': 'HIT',
+          'X-Cache-Key': cacheKey,
+        }
+      });
+    }
     
     // Extract query parameters
     const search = searchParams.get('search')?.toLowerCase() || '';
@@ -54,21 +103,34 @@ export async function GET(request: Request) {
       whereCondition.category = { in: categories };
     }
     
-    // Search filter
+    // Search filter - more efficient with OR conditions
     if (search) {
       whereCondition.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { district: { contains: search, mode: 'insensitive' } },
         { country: { contains: search, mode: 'insensitive' } },
         { category: { contains: search, mode: 'insensitive' } },
-        { producer: { contains: search, mode: 'insensitive' } },
-        { sub_district: { contains: search, mode: 'insensitive' } }
+        { producer: { contains: search, mode: 'insensitive' } }
       ];
     }
     
+    // Determine cache TTL based on query complexity
+    // More specific queries get longer cache times (less likely to change)
+    const cacheTTL = search || countries.length > 0 || categories.length > 0 
+      ? CACHE_MEDIUM  // More specific query = medium cache
+      : CACHE_SHORT;  // General listing = shorter cache
+    
+    // Calculate cache settings for Prisma
+    const cacheStrategy = {
+      ttl: cacheTTL,              // Time to live
+      swr: CACHE_REVALIDATE,      // Stale-while-revalidate time
+      regions: ['global']         // Cache globally
+    };
+    
     // Get total count for pagination info
     const totalCount = await prisma.products.count({
-      where: whereCondition
+      where: whereCondition,
+      cacheStrategy
     });
     
     // Execute paginated query with accelerate caching
@@ -79,17 +141,11 @@ export async function GET(request: Request) {
       },
       skip: offset,
       take: limit,
-      cacheStrategy: {
-        ttl: 60, // Cache for 60 seconds
-        swr: 300 // Stale while revalidate for 5 minutes
-      }
+      cacheStrategy
     });
     
-    // Generate a cache key based on the request parameters
-    const cacheKey = `products-${search}-${sortBy}-${sortOrder}-${page}-${limit}-${countries.join(',')}-${categories.join(',')}-${minPrice}-${maxPrice}`;
-    
-    // Return response with pagination metadata and enhanced caching
-    return NextResponse.json({
+    // Prepare response data
+    const responseData = {
       products,
       pagination: {
         total: totalCount,
@@ -98,12 +154,30 @@ export async function GET(request: Request) {
         pages: Math.ceil(totalCount / limit),
         hasMore: offset + products.length < totalCount
       }
-    }, {
+    };
+    
+    // Store in memory cache
+    responseCache.set(cacheKey, {
+      data: responseData,
+      timestamp: Date.now()
+    });
+    
+    // Clean up old cache entries occasionally
+    if (Math.random() < 0.05) { // 5% chance on each request
+      const now = Date.now();
+      for (const [key, value] of responseCache.entries()) {
+        if (now - value.timestamp > CACHE_MEDIUM * 1000) {
+          responseCache.delete(key);
+        }
+      }
+    }
+    
+    // Return response with appropriate cache headers
+    return NextResponse.json(responseData, {
       headers: {
-        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
-        'CDN-Cache-Control': 'public, max-age=120',
-        'Vercel-CDN-Cache-Control': 'public, max-age=120',
-        'X-Cache-Key': cacheKey
+        'Cache-Control': `public, max-age=${CACHE_SHORT}, s-maxage=${CACHE_MEDIUM}, stale-while-revalidate=${CACHE_REVALIDATE}`,
+        'X-Cache': 'MISS',
+        'X-Cache-Key': cacheKey,
       }
     });
   } catch (error) {

@@ -1,3 +1,4 @@
+// src/app/page.tsx 
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -5,10 +6,13 @@ import { Input, Select, Button, Text, Loading } from '@geist-ui/core';
 import { Search, Filter, List, Grid, AlertCircle, XCircle, RefreshCw } from 'lucide-react';
 import FilterPanel from '@/components/FilterPanel';
 import ProductCard from '@/components/ProductCard';
+import SkeletonProductCard from '@/components/SkeletonProductCard';
 import ProductDetailsModal from '@/components/ProductDetailsModal';
+import SplashScreen from '@/components/SplashScreen';
 import Image from 'next/image';
 import useProductCache from '@/hooks/useProductCache';
 import ImagePreloader from '@/components/ImagePreloader';
+import { Transition } from '@headlessui/react';
 
 export interface Product {
   product_id: string;
@@ -42,7 +46,17 @@ interface PaginationInfo {
   hasMore: boolean;
 }
 
+// Create array of skeleton cards for loading state
+const SkeletonArray = Array(9).fill(0).map((_, i) => (
+  <div key={`skeleton-${i}`} className="h-full">
+    <SkeletonProductCard />
+  </div>
+));
+
 export default function Home() {
+  // Show splash screen on initial load
+  const [showSplashScreen, setShowSplashScreen] = useState(true);
+  
   // States for products and their display
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
@@ -54,9 +68,11 @@ export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   
-  // Pagination and loading states
+  // Product loading states
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [loadedProducts, setLoadedProducts] = useState<Set<string>>(new Set());
+  const [productTransitionState, setProductTransitionState] = useState<'loading' | 'loaded'>('loading');
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
@@ -85,6 +101,15 @@ export default function Home() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loaderRef = useRef<HTMLDivElement | null>(null);
   
+  // Hide splash screen after timeout
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplashScreen(false);
+    }, 5000); // 5 seconds
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -96,6 +121,8 @@ export default function Home() {
   // Reset products when search or sort or filters change
   useEffect(() => {
     setProducts([]);
+    setLoadedProducts(new Set());
+    setProductTransitionState('loading');
     setPage(1);
     setHasMore(true);
     setPagination(null);
@@ -108,6 +135,9 @@ export default function Home() {
     try {
       setLoading(true);
       setError(null);
+      
+      // Set loading state first
+      setProductTransitionState('loading');
       
       // Fetch products using the cache
       const result = await fetchProducts(
@@ -123,7 +153,17 @@ export default function Home() {
       setHasMore(result.pagination.hasMore);
       
       // Update products list - either replace or append
-      setProducts(prev => reset ? result.products : [...prev, ...result.products]);
+      setProducts(prev => {
+        const newProducts = reset ? result.products : [...prev, ...result.products];
+        
+        // After a short delay, transition to the loaded state
+        // This gives time for images to load and creates a smoother transition
+        setTimeout(() => {
+          setProductTransitionState('loaded');
+        }, 300);
+        
+        return newProducts;
+      });
       
       // After we load the current page, prefetch the next page
       if (result.pagination.hasMore) {
@@ -148,8 +188,10 @@ export default function Home() {
 
   // Initial and filter-change data fetch
   useEffect(() => {
-    loadProducts(1, true);
-  }, [debouncedSearch, sortBy, sortOrder, filters, loadProducts]);
+    if (!showSplashScreen) {
+      loadProducts(1, true);
+    }
+  }, [debouncedSearch, sortBy, sortOrder, filters, loadProducts, showSplashScreen]);
 
   // Load more products
   const loadMoreProducts = useCallback(() => {
@@ -158,6 +200,15 @@ export default function Home() {
     setPage(nextPage);
     loadProducts(nextPage);
   }, [hasMore, loading, page, loadProducts]);
+
+  // Track when a product image has loaded successfully
+  const handleProductLoaded = useCallback((productId: string) => {
+    setLoadedProducts(prev => {
+      const newSet = new Set(prev);
+      newSet.add(productId);
+      return newSet;
+    });
+  }, []);
 
   // Set up intersection observer for infinite scroll
   useEffect(() => {
@@ -255,13 +306,9 @@ export default function Home() {
     loadProducts(1, true);
   };
 
-  // Loading indicator
-  if (initialLoading) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <Loading>Loading products...</Loading>
-      </div>
-    );
+  // Render splash screen if showing
+  if (showSplashScreen) {
+    return <SplashScreen />;
   }
 
   return (
@@ -353,22 +400,6 @@ export default function Home() {
         </div>
       )}
       
-      {/* Cache Status & Debug Tools (can be removed in production) */}
-      <div className="mb-4 text-right">
-        <Button 
-          auto 
-          scale={0.5} 
-          type="secondary"
-          onClick={handleClearCache}
-          className="text-xs"
-          onPointerEnterCapture={undefined}
-          onPointerLeaveCapture={undefined}
-          placeholder={undefined}
-        >
-          Clear Cache
-        </Button>
-      </div>
-      
       {/* Active Filters Summary */}
       <div className="flex justify-between items-center mb-6">
         <Text p className="text-neutral-600">
@@ -429,27 +460,52 @@ export default function Home() {
         )}
       </div>
       
-      {/* Product Grid/List Display */}
+      {/* Product Grid/List Display with Skeleton Loading and Transition Effects */}
       {viewMode === 'grid' ? (
-        // Grid View
+        // Grid View with skeleton loading
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map(product => (
-            <div 
-              key={product.product_id}
-              className="h-full" // Ensure consistent height
-            >
-              <ProductCard 
-                product={product}
-                onClick={() => {
-                  setSelectedProduct(product);
-                  setModalOpen(true);
-                }}
-              />
-            </div>
-          ))}
+          {initialLoading ? (
+            // Show skeleton cards during initial loading
+            SkeletonArray
+          ) : (
+            // Show actual product cards with fade-in transition
+            products.map(product => (
+              <div 
+                key={product.product_id}
+                className="h-full transition-opacity duration-300"
+              >
+                <Transition
+                  show={productTransitionState === 'loaded'}
+                  enter="transition-opacity duration-300"
+                  enterFrom="opacity-0"
+                  enterTo="opacity-100"
+                  leave="transition-opacity duration-150"
+                  leaveFrom="opacity-100"
+                  leaveTo="opacity-0"
+                >
+                  <ProductCard 
+                    product={product}
+                    onClick={() => {
+                      setSelectedProduct(product);
+                      setModalOpen(true);
+                    }}
+                  />
+                </Transition>
+              </div>
+            ))
+          )}
+          
+          {/* Show skeleton cards at the end during "load more" */}
+          {loading && !initialLoading && hasMore && (
+            Array(3).fill(0).map((_, i) => (
+              <div key={`skeleton-more-${i}`} className="h-full">
+                <SkeletonProductCard />
+              </div>
+            ))
+          )}
         </div>
       ) : (
-        // List View
+        // List View with skeleton loading
         <div className="overflow-x-auto w-full bg-white border border-neutral-200 rounded-lg shadow-sm">
           <table className="w-full border-collapse">
             <thead className="bg-neutral-50 border-b border-neutral-200">
@@ -463,35 +519,72 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {products.map(product => (
-                <tr 
-                  key={product.product_id} 
-                  onClick={() => {
-                    setSelectedProduct(product);
-                    setModalOpen(true);
-                  }}
-                  className="border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer transition-colors"
-                >
-                  <td className="p-4">
-                    <div className="w-10 h-14 relative">
-                      <Image 
-                        src={product.imageSmall} 
-                        alt={product.name}
-                        fill
-                        className="object-contain"
-                        unoptimized={product.imageSmall.includes('vinmonopolet.no')}
-                      />
-                    </div>
-                  </td>
-                  <td className="p-4 font-medium text-neutral-800">{product.name}</td>
-                  <td className="p-4 text-neutral-600 hidden md:table-cell">{product.category || '—'}</td>
-                  <td className="p-4 text-neutral-600 hidden md:table-cell">{product.country || '—'}</td>
-                  <td className="p-4 font-bold text-wine-red">{formatPrice(product.price)}</td>
-                  <td className="p-4 text-right">
-                    <span className="badge badge-availability">{product.utvalg || '—'}</span>
-                  </td>
-                </tr>
-              ))}
+              {initialLoading ? (
+                // Show skeleton rows during initial loading
+                Array(5).fill(0).map((_, i) => (
+                  <tr key={`skeleton-list-${i}`} className="border-b border-neutral-100">
+                    <td className="p-4">
+                      <div className="w-10 h-14 bg-neutral-200 rounded animate-pulse" />
+                    </td>
+                    <td className="p-4">
+                      <div className="h-5 bg-neutral-200 rounded w-4/5 animate-pulse" />
+                    </td>
+                    <td className="p-4 hidden md:table-cell">
+                      <div className="h-4 bg-neutral-200 rounded w-2/3 animate-pulse" />
+                    </td>
+                    <td className="p-4 hidden md:table-cell">
+                      <div className="h-4 bg-neutral-200 rounded w-1/2 animate-pulse" />
+                    </td>
+                    <td className="p-4">
+                      <div className="h-5 bg-neutral-200 rounded w-20 animate-pulse" />
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="h-4 bg-neutral-200 rounded w-16 ml-auto animate-pulse" />
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                // Show actual product rows with fade-in transition
+                products.map(product => (
+                  <Transition
+                    key={product.product_id}
+                    show={productTransitionState === 'loaded'}
+                    enter="transition-opacity duration-300"
+                    enterFrom="opacity-0"
+                    enterTo="opacity-100"
+                    leave="transition-opacity duration-150"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                  >
+                    <tr 
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setModalOpen(true);
+                      }}
+                      className="border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer transition-colors"
+                    >
+                      <td className="p-4">
+                        <div className="w-10 h-14 relative">
+                          <Image 
+                            src={product.imageSmall} 
+                            alt={product.name}
+                            fill
+                            className="object-contain"
+                            unoptimized={product.imageSmall.includes('vinmonopolet.no')}
+                          />
+                        </div>
+                      </td>
+                      <td className="p-4 font-medium text-neutral-800">{product.name}</td>
+                      <td className="p-4 text-neutral-600 hidden md:table-cell">{product.category || '—'}</td>
+                      <td className="p-4 text-neutral-600 hidden md:table-cell">{product.country || '—'}</td>
+                      <td className="p-4 font-bold text-wine-red">{formatPrice(product.price)}</td>
+                      <td className="p-4 text-right">
+                        <span className="badge badge-availability">{product.utvalg || '—'}</span>
+                      </td>
+                    </tr>
+                  </Transition>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -511,7 +604,7 @@ export default function Home() {
           ref={loaderRef} 
           className="flex justify-center py-12"
         >
-          {loading && <Loading>Loading more products...</Loading>}
+          {loading && !initialLoading && <Loading>Loading more products...</Loading>}
           {!loading && <div className="h-10" />}
         </div>
       )}
@@ -531,12 +624,28 @@ export default function Home() {
       />
       
       {/* No results indicator */}
-      {!loading && products.length === 0 && !error && (
+      {!loading && products.length === 0 && !error && !initialLoading && (
         <div className="text-center py-16 bg-neutral-50 rounded-lg border border-neutral-200">
           <Text h4 className="text-neutral-700">No products found</Text>
           <Text p className="text-neutral-600">Try adjusting your search criteria or filters</Text>
         </div>
       )}
+      
+      {/* Debug Tools (can be removed in production) */}
+      <div className="fixed bottom-4 right-4 z-10">
+        <Button 
+          auto 
+          scale={0.5} 
+          type="secondary"
+          onClick={handleClearCache}
+          className="text-xs opacity-50 hover:opacity-100"
+          onPointerEnterCapture={undefined}
+          onPointerLeaveCapture={undefined}
+          placeholder={undefined}
+        >
+          Clear Cache
+        </Button>
+      </div>
     </div>
   );
 }

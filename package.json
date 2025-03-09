@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@geist-ui/core": "^2.3.8",
+    "@headlessui/react": "^2.2.0",
     "@prisma/client": "^6.4.1",
     "@prisma/extension-accelerate": "^1.2.2",
     "@prisma/extension-pulse": "^1.2.2",
@@ -38,7 +39,7 @@
   "devDependencies": {
     "@types/node": "^22.13.10",
     "@types/react": "^19.0.10",
-    "autoprefixer": "^10.4.20",
+    "autoprefixer": "^10.4.21",
     "eslint": "^9.22.0",
     "prisma": "^6.4.1",
     "ts-node": "^10.9.2"
