@@ -11,6 +11,16 @@
 !.yarn/releases
 !.yarn/versions
 
+# backup files
+*.bak
+
+# databases
+*.sqlite
+*.sqlite3
+*.db
+*.sql
+*.csv
+
 # testing
 /coverage
 
