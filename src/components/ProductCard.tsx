@@ -19,7 +19,8 @@ export default function ProductCard({ product, isGrid = true, onClick }: Product
     imageMain,
     lukt,
     smak,
-    producer
+    producer,
+    sub_district
   } = product;
 
   // Function to format price with Norwegian format
@@ -36,20 +37,20 @@ export default function ProductCard({ product, isGrid = true, onClick }: Product
     >
       <div className="flex flex-col h-full">
         {/* Header with product name */}
-        <div className="px-5 pt-5 pb-3">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 font-serif leading-tight">{name}</h3>
+        <div className="px-6 pt-6 pb-4">
+          <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 font-serif leading-tight">{name}</h3>
         </div>
         
         {/* Main content area */}
-        <div className="px-5 pb-5 flex">
-          {/* Image Container - White background */}
+        <div className="px-6 pb-6 flex">
+          {/* Image Container - Clean white background without borders */}
           <div className="w-1/3 relative">
-            <div className="aspect-[3/4] relative bg-white dark:bg-white rounded-md overflow-hidden border border-gray-100 dark:border-gray-100">
+            <div className="aspect-[3/4] relative bg-white dark:bg-white overflow-hidden">
               <Image
                 src={imageMain}
                 alt={name}
                 fill
-                className="object-contain p-1 transition-opacity duration-300"
+                className="object-contain transition-opacity duration-300"
                 sizes="(max-width: 768px) 33vw, 150px"
                 loading="lazy"
                 unoptimized={imageMain.includes('vinmonopolet.no')}
@@ -63,49 +64,51 @@ export default function ProductCard({ product, isGrid = true, onClick }: Product
           </div>
 
           {/* Taste & Aroma section */}
-          <div className="w-2/3 pl-4 flex flex-col">
+          <div className="w-2/3 pl-6 flex flex-col">
             {lukt && (
-              <div className="mb-2 text-sm">
+              <div className="mb-3">
                 <div>
-                  <span className="text-xs font-medium uppercase tracking-wide text-cabernet-600 dark:text-cabernet-400">Aroma</span>
-                  <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">{lukt}</p>
+                  <span className="text-sm font-medium uppercase tracking-wide text-cabernet-700 dark:text-cabernet-400">AROMA</span>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 line-clamp-2">{lukt}</p>
                 </div>
               </div>
             )}
             
             {smak && (
-              <div className="mt-2 text-sm">
+              <div className="mt-4">
                 <div>
-                  <span className="text-xs font-medium uppercase tracking-wide text-cabernet-600 dark:text-cabernet-400">Taste</span>
-                  <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">{smak}</p>
+                  <span className="text-sm font-medium uppercase tracking-wide text-cabernet-700 dark:text-cabernet-400">SMAK</span>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 line-clamp-2">{smak}</p>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Footer with minimalistic info display */}
-        <div className="mt-auto px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          {/* Top row with classification and country */}
-          <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
-            <span>{category || ''}</span>
-            <span>{country || ''}</span>
+        {/* Footer with clean, minimal styling */}
+        <div className="mt-auto px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          {/* Category and country */}
+          <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-1">
+            <div>
+              {category && <span>{category}</span>}
+            </div>
+            <div>
+              {country && <span>{country}</span>}
+            </div>
           </div>
           
-          {/* Second row with region/district */}
-          {district && (
-            <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
-              <span>{district}</span>
-            </div>
-          )}
+          {/* Region/district */}
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            {district && <span>{district}</span>}
+          </div>
           
-          {/* Bottom row with price and producer */}
-          <div className="flex justify-between items-center mt-1">
-            <div className="text-lg font-bold text-cabernet-800 dark:text-cabernet-300">
+          {/* Price and producer */}
+          <div className="flex justify-between items-center mt-2">
+            <div className="text-xl font-bold text-cabernet-800 dark:text-cabernet-300">
               {formatPrice(price)}
             </div>
             {producer && (
-              <div className="text-xs text-gray-500 dark:text-gray-400">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 {producer}
               </div>
             )}
