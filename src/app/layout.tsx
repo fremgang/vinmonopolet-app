@@ -51,14 +51,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ProductStreamProvider>
           <main className="flex-1 pt-32 pb-12">
             <div className="max-w-7xl mx-auto px-4">
-              {/* Live updates section - shows recent product changes */}
-              <LiveUpdates />
+
               
               {/* Main content */}
-              {children}
+              
             </div>
           </main>
-        </ProductStreamProvider>
+        
         
         <footer className="bg-gray-900 text-gray-300 py-8">
           <div className="max-w-7xl mx-auto px-4">
@@ -113,6 +112,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </footer>
+        {/* Live updates section - shows recent product changes */}
+        {children}
+        <LiveUpdates />
+        </ProductStreamProvider>
         <Analytics />
         <SpeedInsights />
       </body>
