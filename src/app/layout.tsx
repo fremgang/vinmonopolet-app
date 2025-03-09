@@ -38,14 +38,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ProductStreamProvider>
           <main className="flex-1 pt-24 pb-12">
             <div className="max-w-7xl mx-auto px-4">
-              {/* Main content */}
-              {children}
-              
-              {/* Live updates section - shows recent product changes */}
-              <LiveUpdates />
             </div>
           </main>
+          {children}
         </ProductStreamProvider>
+        <LiveUpdates />
         <Analytics />
         <SpeedInsights />
       </body>

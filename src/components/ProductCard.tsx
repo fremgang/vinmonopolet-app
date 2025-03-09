@@ -1,5 +1,5 @@
 // src/components/ProductCard.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import Image from 'next/image';
 import { Product } from '@/app/page';
 import ImageCache from '@/utils/imageCache';
