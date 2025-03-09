@@ -58,6 +58,7 @@ const validSortOrders = ['asc', 'desc'] as const;
 type SortOrder = typeof validSortOrders[number];
 
 export async function GET(request: Request) {
+  console.log('Database URL exists:', !!process.env.DATABASE_URL);
   try {
     const { searchParams } = new URL(request.url);
     
@@ -131,6 +132,10 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('API error:', error);
+    if (error instanceof Error) {
+      console.error('Error type:', error.name);
+      console.error('Error message:', error.message);
+    }
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return NextResponse.json(
