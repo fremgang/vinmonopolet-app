@@ -217,66 +217,50 @@ export default function Home() {
     return `${new Intl.NumberFormat('no-NO').format(price)} kr`;
   };
 
-// Replace the renderListItem function with this updated version
-const renderListItem = (product: Product) => {
-  return (
-    <div 
-      key={product.product_id}
-      className="list-table-row hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-      onClick={() => {
-        setSelectedProduct(product);
-        setModalOpen(true);
-      }}
-    >
-      <div className="list-table-cell image-cell">
-        <div className="product-image-container relative">
-          <Image 
-            src={product.imageMain} 
-            alt={product.name}
-            width={40}
-            height={56}
-            className="product-image object-contain"
-            unoptimized={product.imageMain.includes('vinmonopolet.no')}
-            onError={() => {/* Next/Image handles errors differently */}}
-          />
-        </div>
-      </div>
-      <div className="list-table-cell name-cell font-medium">
-        {product.name}
-      </div>
-      <div className="list-table-cell category-cell">
-        {product.category || '—'}
-      </div>
-      <div className="list-table-cell country-cell">
-        {product.country || '—'}
-      </div>
-      <div className="list-table-cell type-cell">
-        {product.varetype || '—'}
-      </div>
-      <div className="list-table-cell price-cell font-bold text-wine-800">
-        {formatPrice(product.price)}
-      </div>
-      <div className="list-table-cell availability-cell">
-        <span className="availability-badge">
-          {product.utvalg || '—'}
-        </span>
-      </div>
-    </div>
-  );
-};
-
-  // List view table header
-  const renderListHeader = () => {
+  // Render list view as a table
+  const renderListView = () => {
     return (
-      <div className="list-table-header">
-        <div className="list-table-cell image-cell">Image</div>
-        <div className="list-table-cell name-cell">Name</div>
-        <div className="list-table-cell category-cell">Category</div>
-        <div className="list-table-cell country-cell">Country</div>
-        <div className="list-table-cell type-cell">Type</div>
-        <div className="list-table-cell price-cell">Price</div>
-        <div className="list-table-cell availability-cell">Availability</div>
-      </div>
+      <table className="product-table">
+        <thead className="product-table-header">
+          <tr>
+            <th className="product-image-cell">Image</th>
+            <th>Name</th>
+            <th className="hide-mobile">Category</th>
+            <th className="hide-mobile">Country</th>
+            <th>Price</th>
+            <th>Availability</th>
+          </tr>
+        </thead>
+        <tbody className="product-table-body">
+          {products.map(product => (
+            <tr 
+              key={product.product_id} 
+              onClick={() => {
+                setSelectedProduct(product);
+                setModalOpen(true);
+              }}
+            >
+              <td className="product-image-cell">
+                <Image 
+                  src={product.imageSmall} 
+                  alt={product.name}
+                  width={48}
+                  height={64}
+                  className="product-image"
+                  unoptimized={product.imageSmall.includes('vinmonopolet.no')}
+                />
+              </td>
+              <td className="font-medium">{product.name}</td>
+              <td className="hide-mobile text-gray-600">{product.category || '—'}</td>
+              <td className="hide-mobile text-gray-600">{product.country || '—'}</td>
+              <td className="price-cell">{formatPrice(product.price)}</td>
+              <td className="text-right">
+                <span className="availability-badge">{product.utvalg || '—'}</span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     );
   };
 
@@ -424,12 +408,7 @@ const renderListItem = (product: Product) => {
       ) : (
         // List View - Table style
         <div className="overflow-x-auto w-full">
-          <div className="list-table">
-            {renderListHeader()}
-            <div className="list-table-body">
-              {products.map(product => renderListItem(product))}
-            </div>
-          </div>
+          {renderListView()}
         </div>
       )}
       
