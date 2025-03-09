@@ -71,17 +71,24 @@ export async function GET(request: Request) {
       where: whereCondition
     });
     
-    // Execute paginated query
+    // Execute paginated query with accelerate caching
     const products = await prisma.products.findMany({
       where: whereCondition,
       orderBy: {
         [sortBy]: sortOrder
       },
       skip: offset,
-      take: limit
+      take: limit,
+      cacheStrategy: {
+        ttl: 60, // Cache for 60 seconds
+        swr: 300 // Stale while revalidate for 5 minutes
+      }
     });
     
-    // Return response with pagination metadata
+    // Generate a cache key based on the request parameters
+    const cacheKey = `products-${search}-${sortBy}-${sortOrder}-${page}-${limit}-${countries.join(',')}-${categories.join(',')}-${minPrice}-${maxPrice}`;
+    
+    // Return response with pagination metadata and enhanced caching
     return NextResponse.json({
       products,
       pagination: {
@@ -93,7 +100,10 @@ export async function GET(request: Request) {
       }
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300'
+        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600',
+        'CDN-Cache-Control': 'public, max-age=120',
+        'Vercel-CDN-Cache-Control': 'public, max-age=120',
+        'X-Cache-Key': cacheKey
       }
     });
   } catch (error) {

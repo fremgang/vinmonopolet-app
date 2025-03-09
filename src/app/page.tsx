@@ -7,6 +7,8 @@ import FilterPanel from '@/components/FilterPanel';
 import ProductCard from '@/components/ProductCard';
 import ProductDetailsModal from '@/components/ProductDetailsModal';
 import Image from 'next/image';
+import useProductCache from '@/hooks/useProductCache';
+import ImagePreloader from '@/components/ImagePreloader';
 
 export interface Product {
   product_id: string;
@@ -41,21 +43,27 @@ interface PaginationInfo {
 }
 
 export default function Home() {
+  // States for products and their display
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortBy, setSortBy] = useState('price');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  
+  // Pagination and loading states
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [page, setPage] = useState(1);
+  
+  // Track visible products for preloading
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 0 });
   
   // Filter state
   const [filters, setFilters] = useState({
@@ -64,11 +72,19 @@ export default function Home() {
     priceRange: [0, 100000] as [number, number]
   });
   
-  const LIMIT = 50; // Products per page
+  // Use our product cache hook
+  const { 
+    fetchProducts, 
+    prefetchProducts, 
+    loading: cacheLoading, 
+    error: cacheError,
+    clearCache
+  } = useProductCache();
+  
+  // References for intersection observer
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loaderRef = useRef<HTMLDivElement | null>(null);
-  const controllerRef = useRef<AbortController | null>(null);
-
+  
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -85,92 +101,63 @@ export default function Home() {
     setPagination(null);
   }, [debouncedSearch, sortBy, sortOrder, filters]);
 
-  // Main fetch function
-  const fetchProducts = useCallback(async (pageNum: number, reset = false) => {
+  // Main fetch function using the cache
+  const loadProducts = useCallback(async (pageNum: number, reset = false) => {
     if (loading) return;
-    
-    if (controllerRef.current) {
-      controllerRef.current.abort();
-    }
-    
-    controllerRef.current = new AbortController();
     
     try {
       setLoading(true);
       setError(null);
       
-      const queryParams = new URLSearchParams({
-        search: debouncedSearch,
+      // Fetch products using the cache
+      const result = await fetchProducts(
+        pageNum,
+        debouncedSearch,
         sortBy,
         sortOrder,
-        page: pageNum.toString(),
-        limit: LIMIT.toString()
-      });
-      
-      // Add filter parameters
-      if (filters.countries.length > 0) {
-        filters.countries.forEach(country => {
-          queryParams.append('countries', country);
-        });
-      }
-      
-      if (filters.categories.length > 0) {
-        filters.categories.forEach(category => {
-          queryParams.append('categories', category);
-        });
-      }
-      
-      if (filters.priceRange[0] > 0 || filters.priceRange[1] < 100000) {
-        queryParams.append('minPrice', filters.priceRange[0].toString());
-        queryParams.append('maxPrice', filters.priceRange[1].toString());
-      }
-      
-      const url = `/api/products?${queryParams.toString()}`;
-      
-      const response = await fetch(url, {
-        signal: controllerRef.current.signal
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (!data.products || !Array.isArray(data.products)) {
-        throw new Error('API returned invalid data');
-      }
+        filters
+      );
       
       // Update pagination info
-      setPagination(data.pagination);
-      setHasMore(data.pagination.hasMore);
+      setPagination(result.pagination);
+      setHasMore(result.pagination.hasMore);
       
       // Update products list - either replace or append
-      setProducts(prev => reset ? data.products : [...prev, ...data.products]);
+      setProducts(prev => reset ? result.products : [...prev, ...result.products]);
+      
+      // After we load the current page, prefetch the next page
+      if (result.pagination.hasMore) {
+        prefetchProducts(
+          pageNum,
+          debouncedSearch,
+          sortBy,
+          sortOrder,
+          filters
+        );
+      }
     } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') {
-        console.error('Error fetching products:', err);
+      if (err instanceof Error) {
+        console.error('Error loading products:', err);
         setError(err.message || 'Failed to load products. Please try again.');
       }
     } finally {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [debouncedSearch, sortBy, sortOrder, filters, loading]);
+  }, [debouncedSearch, sortBy, sortOrder, filters, loading, fetchProducts, prefetchProducts]);
 
   // Initial and filter-change data fetch
   useEffect(() => {
-    fetchProducts(1, true);
-  }, [debouncedSearch, sortBy, sortOrder, filters, fetchProducts]);
+    loadProducts(1, true);
+  }, [debouncedSearch, sortBy, sortOrder, filters, loadProducts]);
 
   // Load more products
   const loadMoreProducts = useCallback(() => {
     if (!hasMore || loading) return;
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchProducts(nextPage);
-  }, [hasMore, loading, page, fetchProducts]);
+    loadProducts(nextPage);
+  }, [hasMore, loading, page, loadProducts]);
 
   // Set up intersection observer for infinite scroll
   useEffect(() => {
@@ -188,11 +175,48 @@ export default function Home() {
     );
     
     observer.observe(currentLoaderRef);
+    observerRef.current = observer;
     
     return () => {
-      observer.unobserve(currentLoaderRef);
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
     };
   }, [hasMore, loading, loadMoreProducts]);
+
+  // Track visible products for preloading
+  useEffect(() => {
+    // Simple algorithm to determine currently visible products based on viewport
+    const handleScroll = () => {
+      const productElements = document.querySelectorAll('.product-card');
+      if (!productElements.length) return;
+      
+      let startIndex = products.length;
+      let endIndex = 0;
+      
+      productElements.forEach((element, index) => {
+        const rect = element.getBoundingClientRect();
+        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+        
+        if (isVisible) {
+          startIndex = Math.min(startIndex, index);
+          endIndex = Math.max(endIndex, index);
+        }
+      });
+      
+      if (startIndex <= endIndex) {
+        setVisibleRange({ start: startIndex, end: endIndex });
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    // Initial calculation
+    setTimeout(handleScroll, 100);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [products.length]);
 
   // Handle sort change
   const handleSortChange = (value: string | string[]) => {
@@ -220,7 +244,15 @@ export default function Home() {
   // Retry loading
   const handleRetry = () => {
     setError(null);
-    fetchProducts(1, true);
+    loadProducts(1, true);
+  };
+
+  // Clear cache and reload
+  const handleClearCache = () => {
+    clearCache();
+    setProducts([]);
+    setPage(1);
+    loadProducts(1, true);
   };
 
   // Loading indicator
@@ -321,6 +353,22 @@ export default function Home() {
         </div>
       )}
       
+      {/* Cache Status & Debug Tools (can be removed in production) */}
+      <div className="mb-4 text-right">
+        <Button 
+          auto 
+          scale={0.5} 
+          type="secondary"
+          onClick={handleClearCache}
+          className="text-xs"
+          onPointerEnterCapture={undefined}
+          onPointerLeaveCapture={undefined}
+          placeholder={undefined}
+        >
+          Clear Cache
+        </Button>
+      </div>
+      
       {/* Active Filters Summary */}
       <div className="flex justify-between items-center mb-6">
         <Text p className="text-neutral-600">
@@ -383,7 +431,7 @@ export default function Home() {
       
       {/* Product Grid/List Display */}
       {viewMode === 'grid' ? (
-        // Grid View - Improved layout with proper spacing
+        // Grid View
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map(product => (
             <div 
@@ -401,7 +449,7 @@ export default function Home() {
           ))}
         </div>
       ) : (
-        // List View - Table style with improved alignment
+        // List View
         <div className="overflow-x-auto w-full bg-white border border-neutral-200 rounded-lg shadow-sm">
           <table className="w-full border-collapse">
             <thead className="bg-neutral-50 border-b border-neutral-200">
@@ -448,6 +496,14 @@ export default function Home() {
           </table>
         </div>
       )}
+      
+      {/* Image Preloader - invisible but preloads upcoming images */}
+      <ImagePreloader 
+        products={products}
+        visibleStart={visibleRange.start}
+        visibleEnd={visibleRange.end}
+        prefetchCount={100}
+      />
       
       {/* Infinite Scroll Loader */}
       {hasMore && (
