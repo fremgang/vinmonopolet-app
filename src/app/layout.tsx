@@ -3,20 +3,12 @@
 import Header from '@/components/Header';
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import type { Metadata } from 'next';
 import { Montserrat, Playfair_Display } from 'next/font/google';
 import { ProductStreamProvider } from '@/components/ProductStreamProvider';
 import LiveUpdates from '@/components/LiveUpdates';
-import Footer from '@/components/Footer';
-import { PrismaClient } from '@prisma/client/edge';
-import { withAccelerate } from '@prisma/extension-accelerate';
 import { usePathname } from 'next/navigation';
 
 import './globals.css';
-
-const prisma = new PrismaClient().$extends(withAccelerate());
-
-export { prisma };
 
 // Font configuration using Next.js 13+ font optimization
 const montserrat = Montserrat({
@@ -44,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         
         {/* Wrap content with ProductStreamProvider for real-time updates */}
         <ProductStreamProvider>
-          <main className="flex-1 pt-32 pb-12">
+          <main className="flex-1 pt-28 pb-12">
             <div className="max-w-7xl mx-auto px-4">
               {/* Main content */}
               {children}
@@ -53,9 +45,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <LiveUpdates />
             </div>
           </main>
-          
-          {/* Conditional Footer - only show on non-home pages */}
-          {!isHomePage && <Footer />}
         </ProductStreamProvider>
         <Analytics />
         <SpeedInsights />

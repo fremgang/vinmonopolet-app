@@ -9,7 +9,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   
   return (
-    <header className="fixed w-full bg-wine-800 dark:bg-gray-800 z-50 shadow-md transition-colors duration-200">
+    <header className="fixed w-full bg-[#8B1A1A] z-50 shadow-md transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center py-4">
           <div className="flex-shrink-0">
@@ -20,13 +20,13 @@ export default function Header() {
 
           <div className="hidden md:flex items-center space-x-6">
             <nav className="flex space-x-8">
-              <Link href="/" className="text-gray-200 hover:text-white transition-colors cursor-pointer font-medium">
+              <Link href="/" className="text-white hover:text-gray-200 transition-colors cursor-pointer font-medium">
                 Home
               </Link>
-              <Link href="/about" className="text-gray-200 hover:text-white transition-colors cursor-pointer font-medium">
+              <Link href="/about" className="text-white hover:text-gray-200 transition-colors cursor-pointer font-medium">
                 About
               </Link>
-              <Link href="/contact" className="text-gray-200 hover:text-white transition-colors cursor-pointer font-medium">
+              <Link href="/contact" className="text-white hover:text-gray-200 transition-colors cursor-pointer font-medium">
                 Contact
               </Link>
             </nav>
@@ -49,13 +49,13 @@ export default function Header() {
         {menuOpen && (
           <div className="md:hidden py-4 animate-fade-in">
             <nav className="flex flex-col space-y-4">
-              <Link href="/" className="block text-gray-200 hover:text-white transition-colors cursor-pointer">
+              <Link href="/" className="block text-white hover:text-gray-200 transition-colors cursor-pointer">
                 Home
               </Link>
-              <Link href="/about" className="block text-gray-200 hover:text-white transition-colors cursor-pointer">
+              <Link href="/about" className="block text-white hover:text-gray-200 transition-colors cursor-pointer">
                 About
               </Link>
-              <Link href="/contact" className="block text-gray-200 hover:text-white transition-colors cursor-pointer">
+              <Link href="/contact" className="block text-white hover:text-gray-200 transition-colors cursor-pointer">
                 Contact
               </Link>
             </nav>

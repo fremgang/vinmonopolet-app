@@ -1,7 +1,11 @@
 // src/app/api/products/route.ts
-import { prisma } from '@/app/layout';
+import { PrismaClient } from '@prisma/client/edge';
+import { withAccelerate } from '@prisma/extension-accelerate';
 import { NextResponse } from 'next/server';
 
+// Initialize Prisma client properly inside the route handler
+// This ensures a fresh connection for each request
+const prisma = new PrismaClient().$extends(withAccelerate());
 
 // Define valid sort options
 const validSortFields = ['product_id', 'name', 'price', 'category', 'country', 'district'];
@@ -112,5 +116,7 @@ export async function GET(request: Request) {
       { error: 'Internal Server Error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }

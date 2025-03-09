@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Input, Select, Button, Text, Loading } from '@geist-ui/core';
-import { Search, Filter, List, Grid } from 'lucide-react';
+import { Search, Filter, List, Grid, AlertCircle, XCircle, RefreshCw } from 'lucide-react';
 import FilterPanel from '@/components/FilterPanel';
 import ProductCard from '@/components/ProductCard';
 import ProductDetailsModal from '@/components/ProductDetailsModal';
@@ -85,7 +85,7 @@ export default function Home() {
     setPagination(null);
   }, [debouncedSearch, sortBy, sortOrder, filters]);
 
-  // Main fetch function - DEFINED BEFORE loadMoreProducts
+  // Main fetch function
   const fetchProducts = useCallback(async (pageNum: number, reset = false) => {
     if (loading) return;
     
@@ -97,6 +97,7 @@ export default function Home() {
     
     try {
       setLoading(true);
+      setError(null);
       
       const queryParams = new URLSearchParams({
         search: debouncedSearch,
@@ -131,7 +132,8 @@ export default function Home() {
       });
       
       if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error ${response.status}`);
       }
       
       const data = await response.json();
@@ -146,11 +148,10 @@ export default function Home() {
       
       // Update products list - either replace or append
       setProducts(prev => reset ? data.products : [...prev, ...data.products]);
-      setError(null);
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
         console.error('Error fetching products:', err);
-        setError('Failed to load products. Please try again.');
+        setError(err.message || 'Failed to load products. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -161,10 +162,9 @@ export default function Home() {
   // Initial and filter-change data fetch
   useEffect(() => {
     fetchProducts(1, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, sortBy, sortOrder, filters]);
+  }, [debouncedSearch, sortBy, sortOrder, filters, fetchProducts]);
 
-  // Load more products for infinite scroll - AFTER fetchProducts is defined
+  // Load more products
   const loadMoreProducts = useCallback(() => {
     if (!hasMore || loading) return;
     const nextPage = page + 1;
@@ -215,6 +215,12 @@ export default function Home() {
   const formatPrice = (price: number | null) => {
     if (price === null) return 'N/A';
     return `${new Intl.NumberFormat('no-NO').format(price)} kr`;
+  };
+
+  // Retry loading
+  const handleRetry = () => {
+    setError(null);
+    fetchProducts(1, true);
   };
 
   // Render list view as a table
@@ -339,8 +345,22 @@ export default function Home() {
       )}
       
       {error && (
-        <div className="p-4 mb-4 text-red-500 bg-red-50 rounded-md">
-          {error}
+        <div className="p-6 mb-6 text-red-600 bg-red-50 rounded-md flex flex-col items-center">
+          <div className="flex items-center mb-4">
+            <AlertCircle className="mr-2" />
+            <h3 className="text-lg font-medium">Error loading products</h3>
+          </div>
+          <p className="mb-4 text-center">{error}</p>
+          <Button 
+            icon={<RefreshCw size={16} />} 
+            type="error" 
+            onClick={handleRetry}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
+            placeholder={undefined}
+          >
+            Try Again
+          </Button>
         </div>
       )}
       
@@ -436,7 +456,7 @@ export default function Home() {
         onClose={() => setModalOpen(false)} 
       />
       
-      {!loading && products.length === 0 && (
+      {!loading && products.length === 0 && !error && (
         <div className="text-center py-16 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <Text h4>No products found</Text>
           <Text p>Try adjusting your search criteria or filters</Text>
