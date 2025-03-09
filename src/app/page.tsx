@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Input, Select, Button, Text, Loading } from '@geist-ui/core';
 import { Search, Filter, List, Grid } from 'lucide-react';
 import FilterPanel from '@/components/FilterPanel';
@@ -52,7 +52,7 @@ export default function Home() {
   const [filters, setFilters] = useState({
     countries: [] as string[],
     categories: [] as string[],
-    priceRange: [0, 10000] as [number, number]
+    priceRange: [0, 100000] as [number, number]
   });
   
   const controllerRef = useRef<AbortController | null>(null);
@@ -124,7 +124,7 @@ export default function Home() {
         });
       }
       
-      if (filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) {
+      if (filters.priceRange[0] > 0 || filters.priceRange[1] < 100000) {
         queryParams.append('minPrice', filters.priceRange[0].toString());
         queryParams.append('maxPrice', filters.priceRange[1].toString());
       }
@@ -188,6 +188,35 @@ export default function Home() {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo(0, 0);
+  };
+
+  // List view header for table-like display
+  const renderListHeader = () => {
+    return (
+      <div className="list-table-header mb-2">
+        <div className="col-span-1">
+          Image
+        </div>
+        <div className="col-span-3">
+          Name
+        </div>
+        <div className="col-span-2">
+          Category
+        </div>
+        <div className="col-span-1">
+          Country
+        </div>
+        <div className="col-span-2">
+          Type
+        </div>
+        <div className="col-span-1">
+          Price
+        </div>
+        <div className="col-span-2 text-right">
+          Availability
+        </div>
+      </div>
+    );
   };
 
   // Generate pagination controls
@@ -383,7 +412,7 @@ export default function Home() {
         </Text>
         
         {(filters.countries.length > 0 || filters.categories.length > 0 || 
-          filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) && (
+          filters.priceRange[0] > 0 || filters.priceRange[1] < 100000) && (
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-sm text-gray-500">Active filters:</span>
             {filters.countries.map(country => (
@@ -396,9 +425,9 @@ export default function Home() {
                 {category}
               </span>
             ))}
-            {(filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) && (
+            {(filters.priceRange[0] > 0 || filters.priceRange[1] < 100000) && (
               <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-xs">
-                {filters.priceRange[0]} - {filters.priceRange[1]} NOK
+                {filters.priceRange[0]} - {filters.priceRange[1] === 100000 ? 'No limit' : filters.priceRange[1]} NOK
               </span>
             )}
             <Button 
@@ -408,7 +437,7 @@ export default function Home() {
               onClick={() => handleUpdateFilters({
                 countries: [],
                 categories: [],
-                priceRange: [0, 10000]
+                priceRange: [0, 100000]
               })}
               onPointerEnterCapture={undefined}
               onPointerLeaveCapture={undefined}
@@ -438,19 +467,22 @@ export default function Home() {
         </div>
       ) : (
         // List View
-        <div className="flex flex-col space-y-4 w-full">
-          {displayedProducts.map(product => (
-            <ProductCard 
-              key={product.product_id} 
-              product={product} 
-              isGrid={false}
-              onClick={() => {
-                setSelectedProduct(product);
-                setModalOpen(true);
-              }}
-            />
-          ))}
-        </div>
+        <>
+          {renderListHeader()}
+          <div className="flex flex-col w-full">
+            {displayedProducts.map(product => (
+              <ProductCard 
+                key={product.product_id} 
+                product={product} 
+                isGrid={false}
+                onClick={() => {
+                  setSelectedProduct(product);
+                  setModalOpen(true);
+                }}
+              />
+            ))}
+          </div>
+        </>
       )}
       
       {/* Pagination controls */}

@@ -37,11 +37,14 @@ export default function FilterPanel({
   const [categoryExpanded, setCategoryExpanded] = useState(true);
   const [priceExpanded, setPriceExpanded] = useState(true);
   
+  // Maximum price range - effectively no limit
+  const MAX_PRICE = 100000;
+  
   // Update active filter count
   const activeFilterCount = 
     selectedCountries.length + 
     selectedCategories.length + 
-    (priceRange[0] > 0 || priceRange[1] < 10000 ? 1 : 0);
+    (priceRange[0] > 0 || priceRange[1] < MAX_PRICE ? 1 : 0);
   
   // Apply filters
   const handleApplyFilters = () => {
@@ -56,12 +59,12 @@ export default function FilterPanel({
   const handleResetFilters = () => {
     setSelectedCountries([]);
     setSelectedCategories([]);
-    setPriceRange([0, 10000]);
+    setPriceRange([0, MAX_PRICE]);
     
     onUpdateFilters({
       countries: [],
       categories: [],
-      priceRange: [0, 10000]
+      priceRange: [0, MAX_PRICE]
     });
   };
   
@@ -179,20 +182,20 @@ export default function FilterPanel({
         {priceExpanded && (
           <div className="mt-3">
             <div className="text-sm mb-2">
-              {priceRange[0]} - {priceRange[1]} NOK
+              {priceRange[0]} - {priceRange[1] === MAX_PRICE ? 'No limit' : priceRange[1]} NOK
             </div>
             <Slider 
               value={priceRange[0]}
               onChange={(val: number) => setPriceRange([val, priceRange[1]])}
               min={0}
-              max={10000}
-              step={100}
+              max={50000}
+              step={1000}
               type="secondary"
             />
             <div className="flex justify-between text-xs text-gray-500 mt-1">
               <span>0 kr</span>
-              <span>5,000 kr</span>
-              <span>10,000 kr</span>
+              <span>25,000 kr</span>
+              <span>50,000+ kr</span>
             </div>
           </div>
         )}

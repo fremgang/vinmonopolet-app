@@ -42,6 +42,9 @@ export default {
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
       },
+      scrollMargin: {
+        '32': '8rem',
+      },
     },
   },
   plugins: [],
