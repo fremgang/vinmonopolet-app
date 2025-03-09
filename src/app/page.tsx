@@ -1,4 +1,4 @@
-// src/app/page.tsx 
+// src/app/page.tsx
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -105,7 +105,7 @@ export default function Home() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplashScreen(false);
-    }, 5000); // 5 seconds
+    }, 2000); // 2 seconds (reduced from 5 for better UX)
     
     return () => clearTimeout(timer);
   }, []);
@@ -168,7 +168,7 @@ export default function Home() {
       // After we load the current page, prefetch the next page
       if (result.pagination.hasMore) {
         prefetchProducts(
-          pageNum,
+          pageNum + 1,
           debouncedSearch,
           sortBy,
           sortOrder,
