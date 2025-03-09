@@ -1,7 +1,8 @@
 // src/components/FilterPanel.tsx
 import React, { useState, useEffect } from 'react';
-import { Slider, Button, Badge } from '@geist-ui/core';
+import { Button, Badge } from '@geist-ui/core';
 import { X, Filter, RefreshCw, ChevronRight, ChevronDown } from 'lucide-react';
+import PriceRangeInput from './PriceRangeInput';
 
 // Common countries and categories
 const COMMON_COUNTRIES = [
@@ -93,6 +94,11 @@ export default function FilterPanel({
     );
   };
   
+  // Handle price range change
+  const handlePriceRangeChange = (min: number, max: number) => {
+    setPriceRange([min, max]);
+  };
+  
   return (
     <div className="p-5">
       <div className="flex justify-between items-center mb-6">
@@ -169,7 +175,7 @@ export default function FilterPanel({
         )}
       </div>
       
-      {/* Price range filter */}
+      {/* Price range filter - now using our new component */}
       <div className="mb-6">
         <button 
           onClick={() => setPriceExpanded(!priceExpanded)}
@@ -181,22 +187,12 @@ export default function FilterPanel({
         
         {priceExpanded && (
           <div className="mt-3">
-            <div className="text-sm mb-2">
-              {priceRange[0]} - {priceRange[1] === MAX_PRICE ? 'No limit' : priceRange[1]} NOK
-            </div>
-            <Slider 
-              value={priceRange[0]}
-              onChange={(val: number) => setPriceRange([val, priceRange[1]])}
-              min={0}
-              max={150000}
-              step={1000}
-              type="secondary"
+            <PriceRangeInput
+              minPrice={priceRange[0]}
+              maxPrice={priceRange[1]}
+              onPriceRangeChange={handlePriceRangeChange}
+              absoluteMax={MAX_PRICE}
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>0 kr</span>
-              <span>25,000 kr</span>
-              <span>150,000+ kr</span>
-            </div>
           </div>
         )}
       </div>
