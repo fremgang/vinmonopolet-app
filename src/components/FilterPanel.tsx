@@ -188,14 +188,14 @@ export default function FilterPanel({
               value={priceRange[0]}
               onChange={(val: number) => setPriceRange([val, priceRange[1]])}
               min={0}
-              max={50000}
+              max={150000}
               step={1000}
               type="secondary"
             />
             <div className="flex justify-between text-xs text-gray-500 mt-1">
               <span>0 kr</span>
               <span>25,000 kr</span>
-              <span>50,000+ kr</span>
+              <span>150,000+ kr</span>
             </div>
           </div>
         )}
