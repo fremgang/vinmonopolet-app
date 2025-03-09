@@ -33,15 +33,6 @@ const playfair = Playfair_Display({
   variable: '--font-playfair',
 });
 
-// Metadata needs to be in a separate file for client components
-export const metadata = {
-  title: 'Vinmonopolet Explorer',
-  description: 'Discover and explore Norway\'s finest wines and spirits from Vinmonopolet.',
-  icons: {
-    icon: '/favicon.ico',
-  },
-};
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isHomePage = pathname === '/';
