@@ -100,10 +100,10 @@ export default function FilterPanel({
   };
   
   return (
-    <div className="p-5">
+    <div className="p-5 bg-white rounded-lg shadow-sm border border-neutral-200">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-serif font-semibold flex items-center">
-          <Filter size={18} className="mr-2 text-congo-brown-700" /> 
+        <h3 className="text-lg font-serif font-semibold flex items-center text-neutral-800">
+          <Filter size={18} className="mr-2 text-wine-red" /> 
           Filters
           {activeFilterCount > 0 && (
             <Badge type="warning" className="ml-2">{activeFilterCount}</Badge>
@@ -112,10 +112,10 @@ export default function FilterPanel({
       </div>
       
       {/* Country filter */}
-      <div className="mb-6 border-b border-congo-brown-200 dark:border-congo-brown-800 pb-4">
+      <div className="mb-6 border-b border-neutral-200 pb-4">
         <button 
           onClick={() => setCountryExpanded(!countryExpanded)}
-          className="flex justify-between items-center w-full text-left font-medium mb-2"
+          className="flex justify-between items-center w-full text-left font-medium mb-3 text-neutral-700"
         >
           Country
           {countryExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -128,12 +128,7 @@ export default function FilterPanel({
                 <button
                   key={country}
                   onClick={() => toggleCountry(country)}
-                  className={`
-                    px-3 py-1 text-sm rounded-full transition-colors
-                    ${selectedCountries.includes(country) 
-                      ? 'bg-congo-brown-800 text-white' 
-                      : 'bg-congo-brown-100 text-congo-brown-800 dark:bg-congo-brown-800 dark:text-congo-brown-100 hover:bg-congo-brown-200 dark:hover:bg-congo-brown-700'}
-                  `}
+                  className={`filter-chip ${selectedCountries.includes(country) ? 'active' : ''}`}
                 >
                   {country}
                 </button>
@@ -144,10 +139,10 @@ export default function FilterPanel({
       </div>
       
       {/* Category filter */}
-      <div className="mb-6 border-b border-congo-brown-200 dark:border-congo-brown-800 pb-4">
+      <div className="mb-6 border-b border-neutral-200 pb-4">
         <button 
           onClick={() => setCategoryExpanded(!categoryExpanded)}
-          className="flex justify-between items-center w-full text-left font-medium mb-2"
+          className="flex justify-between items-center w-full text-left font-medium mb-3 text-neutral-700"
         >
           Category
           {categoryExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -160,12 +155,7 @@ export default function FilterPanel({
                 <button
                   key={category}
                   onClick={() => toggleCategory(category)}
-                  className={`
-                    px-3 py-1 text-sm rounded-full transition-colors
-                    ${selectedCategories.includes(category) 
-                      ? 'bg-congo-brown-700 text-white' 
-                      : 'bg-congo-brown-100 text-congo-brown-800 dark:bg-congo-brown-800 dark:text-congo-brown-100 hover:bg-congo-brown-200 dark:hover:bg-congo-brown-700'}
-                  `}
+                  className={`filter-chip ${selectedCategories.includes(category) ? 'active' : ''}`}
                 >
                   {category}
                 </button>
@@ -175,11 +165,11 @@ export default function FilterPanel({
         )}
       </div>
       
-      {/* Price range filter - now using our new component */}
+      {/* Price range filter */}
       <div className="mb-6">
         <button 
           onClick={() => setPriceExpanded(!priceExpanded)}
-          className="flex justify-between items-center w-full text-left font-medium mb-2"
+          className="flex justify-between items-center w-full text-left font-medium mb-3 text-neutral-700"
         >
           Price Range
           {priceExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -217,8 +207,8 @@ export default function FilterPanel({
           auto
           type="success"
           style={{
-            backgroundColor: 'var(--congo-brown-800)',
-            borderColor: 'var(--congo-brown-900)'
+            backgroundColor: 'var(--wine-red)',
+            borderColor: 'var(--wine-red-light)'
           }}
           onClick={handleApplyFilters}
           className={activeFilterCount > 0 ? "flex-1" : "w-full"} 

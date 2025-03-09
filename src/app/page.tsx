@@ -223,53 +223,6 @@ export default function Home() {
     fetchProducts(1, true);
   };
 
-  // Render list view as a table
-  const renderListView = () => {
-    return (
-      <table className="product-table">
-        <thead className="product-table-header">
-          <tr>
-            <th className="product-image-cell">Image</th>
-            <th>Name</th>
-            <th className="hide-mobile">Category</th>
-            <th className="hide-mobile">Country</th>
-            <th>Price</th>
-            <th>Availability</th>
-          </tr>
-        </thead>
-        <tbody className="product-table-body">
-          {products.map(product => (
-            <tr 
-              key={product.product_id} 
-              onClick={() => {
-                setSelectedProduct(product);
-                setModalOpen(true);
-              }}
-            >
-              <td className="product-image-cell">
-                <Image 
-                  src={product.imageSmall} 
-                  alt={product.name}
-                  width={48}
-                  height={64}
-                  className="product-image"
-                  unoptimized={product.imageSmall.includes('vinmonopolet.no')}
-                />
-              </td>
-              <td className="font-medium">{product.name}</td>
-              <td className="hide-mobile text-gray-600">{product.category || '—'}</td>
-              <td className="hide-mobile text-gray-600">{product.country || '—'}</td>
-              <td className="price-cell">{formatPrice(product.price)}</td>
-              <td className="text-right">
-                <span className="availability-badge">{product.utvalg || '—'}</span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
-  };
-
   // Loading indicator
   if (initialLoading) {
     return (
@@ -281,7 +234,8 @@ export default function Home() {
 
   return (
     <div className="max-w-7xl mx-auto px-4">
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-4">
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-6">
         <div className="relative w-full md:w-96">
           <Input
             icon={<Search />}
@@ -318,6 +272,7 @@ export default function Home() {
             onPointerLeaveCapture={undefined}
             placeholder={undefined}
             type={showFilters ? "success" : "default"}
+            style={showFilters ? {backgroundColor: 'var(--wine-red)'} : {}}
           >
             Filter
           </Button>
@@ -335,8 +290,9 @@ export default function Home() {
         </div>
       </div>
       
+      {/* Filter Panel */}
       {showFilters && (
-        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md mb-6 shadow-md transition-all animate-fade-in">
+        <div className="mb-6 animate-fade-in">
           <FilterPanel 
             filters={filters} 
             onUpdateFilters={handleUpdateFilters} 
@@ -344,6 +300,7 @@ export default function Home() {
         </div>
       )}
       
+      {/* Error Message */}
       {error && (
         <div className="p-6 mb-6 text-red-600 bg-red-50 rounded-md flex flex-col items-center">
           <div className="flex items-center mb-4">
@@ -364,8 +321,9 @@ export default function Home() {
         </div>
       )}
       
-      <div className="flex justify-between items-center mb-4">
-        <Text p className="text-gray-600 dark:text-gray-300">
+      {/* Active Filters Summary */}
+      <div className="flex justify-between items-center mb-6">
+        <Text p className="text-neutral-600">
           {pagination?.total || 0} products found
           {products.length > 0 && pagination && products.length < pagination.total && 
             ` (showing ${products.length})`}
@@ -374,19 +332,33 @@ export default function Home() {
         {(filters.countries.length > 0 || filters.categories.length > 0 || 
           filters.priceRange[0] > 0 || filters.priceRange[1] < 100000) && (
           <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-sm text-gray-500">Active filters:</span>
+            <span className="text-sm text-neutral-500">Active filters:</span>
             {filters.countries.map(country => (
-              <span key={country} className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-xs">
+              <span key={country} className="filter-chip">
                 {country}
+                <XCircle 
+                  size={14} 
+                  className="ml-1 cursor-pointer" 
+                  onClick={() => handleUpdateFilters({
+                    countries: filters.countries.filter(c => c !== country)
+                  })}
+                />
               </span>
             ))}
             {filters.categories.map(category => (
-              <span key={category} className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-xs">
+              <span key={category} className="filter-chip">
                 {category}
+                <XCircle 
+                  size={14} 
+                  className="ml-1 cursor-pointer" 
+                  onClick={() => handleUpdateFilters({
+                    categories: filters.categories.filter(c => c !== category)
+                  })}
+                />
               </span>
             ))}
             {(filters.priceRange[0] > 0 || filters.priceRange[1] < 100000) && (
-              <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-xs">
+              <span className="filter-chip">
                 {filters.priceRange[0]} - {filters.priceRange[1] === 100000 ? 'No limit' : filters.priceRange[1]} NOK
               </span>
             )}
@@ -409,30 +381,75 @@ export default function Home() {
         )}
       </div>
       
-      {/* Product grid/list container */}
+      {/* Product Grid/List Display */}
       {viewMode === 'grid' ? (
-        // Grid View
+        // Grid View - Improved layout with proper spacing
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map(product => (
-            <ProductCard 
-              key={product.product_id} 
-              product={product} 
-              isGrid={true}
-              onClick={() => {
-                setSelectedProduct(product);
-                setModalOpen(true);
-              }}
-            />
+            <div 
+              key={product.product_id}
+              className="h-full" // Ensure consistent height
+            >
+              <ProductCard 
+                product={product}
+                onClick={() => {
+                  setSelectedProduct(product);
+                  setModalOpen(true);
+                }}
+              />
+            </div>
           ))}
         </div>
       ) : (
-        // List View - Table style
-        <div className="overflow-x-auto w-full">
-          {renderListView()}
+        // List View - Table style with improved alignment
+        <div className="overflow-x-auto w-full bg-white border border-neutral-200 rounded-lg shadow-sm">
+          <table className="w-full border-collapse">
+            <thead className="bg-neutral-50 border-b border-neutral-200">
+              <tr>
+                <th className="p-4 text-left w-16">Image</th>
+                <th className="p-4 text-left font-medium text-neutral-700">Name</th>
+                <th className="p-4 text-left font-medium text-neutral-700 hidden md:table-cell">Category</th>
+                <th className="p-4 text-left font-medium text-neutral-700 hidden md:table-cell">Country</th>
+                <th className="p-4 text-left font-medium text-neutral-700">Price</th>
+                <th className="p-4 text-right font-medium text-neutral-700">Availability</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map(product => (
+                <tr 
+                  key={product.product_id} 
+                  onClick={() => {
+                    setSelectedProduct(product);
+                    setModalOpen(true);
+                  }}
+                  className="border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer transition-colors"
+                >
+                  <td className="p-4">
+                    <div className="w-10 h-14 relative">
+                      <Image 
+                        src={product.imageSmall} 
+                        alt={product.name}
+                        fill
+                        className="object-contain"
+                        unoptimized={product.imageSmall.includes('vinmonopolet.no')}
+                      />
+                    </div>
+                  </td>
+                  <td className="p-4 font-medium text-neutral-800">{product.name}</td>
+                  <td className="p-4 text-neutral-600 hidden md:table-cell">{product.category || '—'}</td>
+                  <td className="p-4 text-neutral-600 hidden md:table-cell">{product.country || '—'}</td>
+                  <td className="p-4 font-bold text-wine-red">{formatPrice(product.price)}</td>
+                  <td className="p-4 text-right">
+                    <span className="badge badge-availability">{product.utvalg || '—'}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
       
-      {/* Infinite scroll loader */}
+      {/* Infinite Scroll Loader */}
       {hasMore && (
         <div 
           ref={loaderRef} 
@@ -443,23 +460,25 @@ export default function Home() {
         </div>
       )}
       
-      {/* No more products indicator */}
+      {/* End of results indicator */}
       {!hasMore && products.length > 0 && (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-neutral-500">
           End of results
         </div>
       )}
       
+      {/* Product Details Modal */}
       <ProductDetailsModal 
         product={selectedProduct} 
         visible={modalOpen} 
         onClose={() => setModalOpen(false)} 
       />
       
+      {/* No results indicator */}
       {!loading && products.length === 0 && !error && (
-        <div className="text-center py-16 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <Text h4>No products found</Text>
-          <Text p>Try adjusting your search criteria or filters</Text>
+        <div className="text-center py-16 bg-neutral-50 rounded-lg border border-neutral-200">
+          <Text h4 className="text-neutral-700">No products found</Text>
+          <Text p className="text-neutral-600">Try adjusting your search criteria or filters</Text>
         </div>
       )}
     </div>
