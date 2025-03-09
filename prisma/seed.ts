@@ -1,9 +1,9 @@
 // prisma/seed.ts
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client'
 import fs from 'fs';
 import path from 'path';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function main() {
   // Check if we have sample data to seed

@@ -1,22 +1,15 @@
-// prisma/schema.prisma - Optimized for Prisma v6
-
-// Declare generator with preview features
+// prisma/schema.prisma - Minimal version
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["clientExtensions", "fullTextSearch", "metrics"]
-  engineType      = "dataproxy" // Optimized for serverless/edge environments
+  provider = "prisma-client-js"
 }
 
-// Configure data source with extensions
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
-  extensions = [accelerate, pulse]
-  relationMode = "foreignKeys" // Explicitly define relation mode
 }
 
-// Products model with caching strategy
+// Products model with minimal configuration
 model products {
   product_id     String  @id
   name           String
@@ -27,8 +20,8 @@ model products {
   sub_district   String?
   producer       String?
   varetype       String?
-  lukt           String? @db.Text // Using Text for longer content
-  smak           String? @db.Text // Using Text for longer content
+  lukt           String? @db.Text
+  smak           String? @db.Text
   farge          String?
   metode         String?
   inneholder     String?
@@ -40,56 +33,9 @@ model products {
   imageSmall     String?
   imageMain      String?
   
-  // Define standard indexes - these help with common queries
+  // Simple indexes
   @@index([name])
   @@index([category])
   @@index([country])
   @@index([price])
-  @@index([country, category])
-  
-  // Add price range indexes for filtering
-  @@index([price(sort: asc)])
-  @@index([price(sort: desc)])
-  
-  // Add full-text search index (if your DB supports it)
-  @@fulltext([name, category, country, producer])
-  
-  // Caching strategy for better performance
-  @@cacheStrategy {
-    ttl = 3600      // Cache for 1 hour
-    swr = 1800      // Stale-while-revalidate for 30 minutes
-    regions = [global] // Cache globally
-  }
-}
-
-// Define a table for placeholder images to optimize frontend
-model placeholder_images {
-  id          String  @id @default(uuid())
-  url_pattern String  @unique // Pattern to match placeholder image URLs
-  is_active   Boolean @default(true)
-  local_path  String  // Path to local placeholder image
-  
-  @@index([url_pattern])
-  @@cacheStrategy {
-    ttl = 86400     // Cache for 24 hours
-    swr = 43200     // Stale-while-revalidate for 12 hours
-  }
-}
-
-// Search queries cache to optimize repeated searches
-model search_cache {
-  id           String   @id @default(uuid())
-  query_hash   String   @unique // Hash of the search parameters
-  query_params Json     // Store original query parameters
-  result_count Int      // Number of results
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
-  
-  @@index([query_hash])
-  @@index([created_at])
-  
-  @@cacheStrategy {
-    ttl = 1800      // Cache for 30 minutes
-    swr = 600       // Stale-while-revalidate for 10 minutes
-  }
 }
