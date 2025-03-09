@@ -6,12 +6,12 @@ import type { Metadata } from 'next';
 import { Montserrat, Playfair_Display } from 'next/font/google';
 import { ProductStreamProvider } from '@/components/ProductStreamProvider';
 import LiveUpdates from '@/components/LiveUpdates';
-
-
-
-import './globals.css';
+// import { Prisma } from '@prisma/client';
 import { PrismaClient } from '@prisma/client/edge';
 import { withAccelerate } from '@prisma/extension-accelerate';
+
+import './globals.css';
+
 
 
 const prisma = new PrismaClient().$extends(withAccelerate());
