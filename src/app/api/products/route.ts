@@ -1,7 +1,6 @@
 // src/app/api/products/route.ts
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-// Removed withPulse import to resolve module not found error
 
 // Declare prisma without initialization
 let prisma: PrismaClient;
@@ -26,9 +25,6 @@ if (process.env.NODE_ENV === 'production') {
   }
   prisma = (global as any).prisma;
 }
-
-// Export the configured prisma client
-export { prisma };
 
 // Define product interface
 export interface Product {
