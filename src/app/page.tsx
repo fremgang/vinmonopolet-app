@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Input, Select, Button, Text, Loading } from '@geist-ui/core';
 import { Search, Filter, List, Grid } from 'lucide-react';
 import FilterPanel from '@/components/FilterPanel';
@@ -33,19 +33,20 @@ export interface Product {
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortBy, setSortBy] = useState('price');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20; // For pagination
   
   // Filter state
   const [filters, setFilters] = useState({
@@ -54,8 +55,6 @@ export default function Home() {
     priceRange: [0, 10000] as [number, number]
   });
   
-  const limit = 20;
-  const loaderRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<AbortController | null>(null);
 
   // Debounce search input
@@ -69,16 +68,13 @@ export default function Home() {
   // Reset products when search or sort or filters change
   useEffect(() => {
     setProducts([]);
-    setOffset(0);
-    setHasMore(true);
+    setCurrentPage(1);
+    setInitialLoading(true);
   }, [debouncedSearch, sortBy, sortOrder, filters]);
 
   // This effect runs only once on component mount
   useEffect(() => {
-    const initialFetch = async () => {
-      await fetchProducts(true);
-    };
-    initialFetch();
+    fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -87,15 +83,19 @@ export default function Home() {
     // Skip the initial render
     if (initialLoading) return;
     
-    const refetch = async () => {
-      await fetchProducts(true);
-    };
-    refetch();
+    fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, sortBy, sortOrder, filters]);
 
-  const fetchProducts = useCallback(async (reset = false) => {
-    if (loading || (!reset && !hasMore)) return;
+  // Update displayed products when current page changes
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setDisplayedProducts(products.slice(startIndex, endIndex));
+  }, [currentPage, products]);
+
+  const fetchProducts = useCallback(async () => {
+    if (loading) return;
     
     if (controllerRef.current) {
       controllerRef.current.abort();
@@ -106,14 +106,10 @@ export default function Home() {
     try {
       setLoading(true);
       
-      const currentOffset = reset ? 0 : offset;
-      
       const queryParams = new URLSearchParams({
         search: debouncedSearch,
         sortBy,
-        sortOrder,
-        limit: limit.toString(),
-        offset: currentOffset.toString()
+        sortOrder
       });
       
       if (filters.countries.length > 0) {
@@ -149,41 +145,21 @@ export default function Home() {
         throw new Error('API returned invalid data');
       }
       
-      setProducts(prev => (reset ? data : [...prev, ...data]));
-      setOffset(prev => (reset ? limit : prev + limit));
-      setHasMore(data.length === limit);
+      setProducts(data);
+      // Initialize displayed products with the first page
+      setDisplayedProducts(data.slice(0, itemsPerPage));
+      setCurrentPage(1);
       setError(null);
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
         console.error('Error fetching products:', err);
         setError('Failed to load products. Please try again.');
-        setHasMore(false);
       }
     } finally {
       setLoading(false);
       setInitialLoading(false);
     }
-  }, [debouncedSearch, sortBy, sortOrder, offset, hasMore, loading, limit, filters]);
-
-  // Intersection observer for infinite scroll
-  useEffect(() => {
-    if (!loaderRef.current || initialLoading) return;
-    
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          fetchProducts();
-        }
-      },
-      { threshold: 0.5 }
-    );
-    
-    observer.observe(loaderRef.current);
-    
-    return () => {
-      observer.disconnect();
-    };
-  }, [fetchProducts, hasMore, loading, initialLoading]);
+  }, [debouncedSearch, sortBy, sortOrder, loading, filters]);
 
   // Clean up abort controllers on unmount
   useEffect(() => {
@@ -207,6 +183,119 @@ export default function Home() {
       ...newFilters
     }));
     setShowFilters(false);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo(0, 0);
+  };
+
+  // Generate pagination controls
+  const renderPagination = () => {
+    const totalPages = Math.ceil(products.length / itemsPerPage);
+    if (totalPages <= 1) return null;
+    
+    return (
+      <div className="flex justify-center mt-8 mb-4">
+        <div className="flex space-x-2">
+          <Button 
+            auto 
+            disabled={currentPage === 1}
+            onClick={() => handlePageChange(currentPage - 1)}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
+            placeholder={undefined}
+          >
+            Previous
+          </Button>
+          
+          <div className="flex items-center space-x-2 px-2">
+            {currentPage > 1 && (
+              <Button 
+                auto 
+                type="abort" 
+                scale={2/3}
+                onClick={() => handlePageChange(1)}
+                onPointerEnterCapture={undefined}
+                onPointerLeaveCapture={undefined}
+                placeholder={undefined}
+              >
+                1
+              </Button>
+            )}
+            
+            {currentPage > 3 && <span>...</span>}
+            
+            {currentPage > 2 && (
+              <Button 
+                auto 
+                type="abort" 
+                scale={2/3}
+                onClick={() => handlePageChange(currentPage - 1)}
+                onPointerEnterCapture={undefined}
+                onPointerLeaveCapture={undefined}
+                placeholder={undefined}
+              >
+                {currentPage - 1}
+              </Button>
+            )}
+            
+            <Button 
+              auto 
+              type="success" 
+              scale={2/3}
+              onClick={() => handlePageChange(currentPage)}
+              onPointerEnterCapture={undefined}
+              onPointerLeaveCapture={undefined}
+              placeholder={undefined}
+            >
+              {currentPage}
+            </Button>
+            
+            {currentPage < totalPages - 1 && (
+              <Button 
+                auto 
+                type="abort" 
+                scale={2/3}
+                onClick={() => handlePageChange(currentPage + 1)}
+                onPointerEnterCapture={undefined}
+                onPointerLeaveCapture={undefined}
+                placeholder={undefined}
+              >
+                {currentPage + 1}
+              </Button>
+            )}
+            
+            {currentPage < totalPages - 2 && <span>...</span>}
+            
+            {currentPage < totalPages && (
+              <Button 
+                auto 
+                type="abort" 
+                scale={2/3}
+                onClick={() => handlePageChange(totalPages)}
+                onPointerEnterCapture={undefined}
+                onPointerLeaveCapture={undefined}
+                placeholder={undefined}
+              >
+                {totalPages}
+              </Button>
+            )}
+          </div>
+          
+          <Button 
+            auto 
+            disabled={currentPage === totalPages}
+            onClick={() => handlePageChange(currentPage + 1)}
+            onPointerEnterCapture={undefined}
+            onPointerLeaveCapture={undefined}
+            placeholder={undefined}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+    );
   };
 
   if (initialLoading) {
@@ -335,7 +424,7 @@ export default function Home() {
       {viewMode === 'grid' ? (
         // Grid View
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map(product => (
+          {displayedProducts.map(product => (
             <ProductCard 
               key={product.product_id} 
               product={product} 
@@ -350,7 +439,7 @@ export default function Home() {
       ) : (
         // List View
         <div className="flex flex-col space-y-4 w-full">
-          {products.map(product => (
+          {displayedProducts.map(product => (
             <ProductCard 
               key={product.product_id} 
               product={product} 
@@ -364,6 +453,9 @@ export default function Home() {
         </div>
       )}
       
+      {/* Pagination controls */}
+      {renderPagination()}
+      
       <ProductDetailsModal 
         product={selectedProduct} 
         visible={modalOpen} 
@@ -372,17 +464,8 @@ export default function Home() {
       
       {loading && !initialLoading && (
         <div className="flex justify-center my-8">
-          <Loading>Loading more...</Loading>
+          <Loading>Loading products...</Loading>
         </div>
-      )}
-      
-      {/* Infinite scroll trigger */}
-      {hasMore && <div ref={loaderRef} style={{ height: '10px' }} />}
-      
-      {!hasMore && products.length > 0 && (
-        <Text p className="text-center text-gray-500 my-8">
-          End of results
-        </Text>
       )}
       
       {!loading && products.length === 0 && (
