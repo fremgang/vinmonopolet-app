@@ -12,8 +12,6 @@ const nextConfig = {
     ],
     // Increase image cache duration
     minimumCacheTTL: 3600, // 1 hour
-    // Optional: optimize image formats
-    formats: ['image/webp'],
   },
   experimental: {
     // Use Turbopack instead of webpack
@@ -26,15 +24,13 @@ const nextConfig = {
     fetchCache: true,
     // Enable HTTP keep-alive
     keepAlive: true,
-    // Enable API response size optimization
-    optimizeServerReact: true,
   },
   // Add custom headers for caching
   async headers() {
     return [
       {
-        // Apply caching to static assets
-        source: '/(.*).(?:jpg|jpeg|png|svg|webp|js|css|woff|woff2)$',
+        // Apply caching to static assets - fixed pattern
+        source: '/:path*\\.(jpg|jpeg|png|svg|webp|js|css|woff|woff2)$',
         headers: [
           {
             key: 'Cache-Control',
