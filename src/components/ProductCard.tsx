@@ -29,11 +29,11 @@ export default function ProductCard({ product, isGrid = true, onClick }: Product
   return (
     <Card
       hoverable
-      className="product-card hover:shadow-card-hover bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden"
+      className="product-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden"
       onClick={onClick}
     >
       <div className="flex flex-col h-full">
-        <div className="aspect-[4/3] relative bg-gray-50 dark:bg-gray-900 rounded-t-lg overflow-hidden">
+        <div className="aspect-[4/3] relative bg-white dark:bg-gray-900 rounded-t-lg overflow-hidden">
           <Image
             src={imageMain}
             alt={name}
