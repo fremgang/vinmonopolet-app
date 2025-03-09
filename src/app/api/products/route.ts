@@ -27,7 +27,7 @@ export interface Product {
   imageMain: string | null;
 }
 
-// Define valid sort fields
+// Define valid sort and filter options
 const validSortFields = ['product_id', 'name', 'price', 'category', 'country', 'district'];
 const validSortOrders = ['asc', 'desc'] as const;
 
@@ -45,14 +45,11 @@ export async function GET(request: Request) {
     
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as SortOrder;
     
-    // Skip pagination parameters
-    // Removed limit and offset parameters
-    
     // Get filter parameters
     const countries = searchParams.getAll('countries');
     const categories = searchParams.getAll('categories');
     const minPrice = parseInt(searchParams.get('minPrice') || '0');
-    const maxPrice = parseInt(searchParams.get('maxPrice') || '10000');
+    const maxPrice = parseInt(searchParams.get('maxPrice') || '100000');
     
     // Build where conditions
     let whereCondition: any = {};
@@ -98,7 +95,7 @@ export async function GET(request: Request) {
       orderBy: {
         [sortBy]: sortOrder
       }
-      // Removed take and skip parameters to return all products
+      // No pagination limits
     });
     
     console.log(`Found ${products.length} products matching criteria`);
