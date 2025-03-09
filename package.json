@@ -4,10 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate --no-engine && next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate --no-engine",
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",
@@ -34,7 +34,8 @@
     "tailwindcss": "^3.4.17",
     "undici": "^7.4.0",
     "uuid": "^11.1.0",
-    "vercel": "^41.3.2"
+    "vercel": "^41.3.2",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",

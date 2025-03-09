@@ -14,12 +14,8 @@
 # backup files
 *.bak
 
-# databases
-*.sqlite
-*.sqlite3
-*.db
-*.sql
-*.csv
+# Ensure Prisma migrations are included
+!prisma/migrations/**/*.sql
 
 # testing
 /coverage

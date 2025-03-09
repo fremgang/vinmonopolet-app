@@ -2,30 +2,36 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Add timeout to prevent long-running queries
+const QUERY_TIMEOUT = 10000; // 10 seconds
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // Extract pagination parameters
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    // Extract parameters with validation
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50')));
     const skip = (page - 1) * limit;
     
-    // Extract sorting parameters
-    const sortBy = searchParams.get('sortBy') || 'name';
-    const sortOrder = searchParams.get('sortOrder') || 'asc';
+    const sortBy = ['name', 'price', 'country', 'category'].includes(searchParams.get('sortBy') || '')
+      ? searchParams.get('sortBy') || 'name'
+      : 'name';
+      
+    const sortOrder = ['asc', 'desc'].includes(searchParams.get('sortOrder') || '')
+      ? searchParams.get('sortOrder') || 'asc'
+      : 'asc';
     
-    // Extract search and filter parameters
     const search = searchParams.get('search') || '';
-    const minPrice = parseInt(searchParams.get('minPrice') || '0');
-    const maxPrice = parseInt(searchParams.get('maxPrice') || '100000');
+    const minPrice = Math.max(0, parseInt(searchParams.get('minPrice') || '0'));
+    const maxPrice = Math.max(minPrice, parseInt(searchParams.get('maxPrice') || '100000'));
+    
     const countries = searchParams.getAll('countries');
     const categories = searchParams.getAll('categories');
     
-    // Build where clause for filtering
+    // Build where clause
     const where: any = {};
     
-    // Add search condition
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -35,7 +41,6 @@ export async function GET(request: Request) {
       ];
     }
     
-    // Add price range condition
     if (minPrice > 0 || maxPrice < 100000) {
       where.price = {
         gte: minPrice,
@@ -43,34 +48,43 @@ export async function GET(request: Request) {
       };
     }
     
-    // Add country filter
     if (countries.length > 0) {
       where.country = { in: countries };
     }
     
-    // Add category filter
     if (categories.length > 0) {
       where.category = { in: categories };
     }
     
-    // Execute queries in parallel for better performance
-    const [products, totalCount] = await Promise.all([
-      prisma.products.findMany({
-        where,
-        take: limit,
-        skip,
-        orderBy: {
-          [sortBy]: sortOrder.toLowerCase()
-        }
-      }),
-      prisma.products.count({ where })
-    ]);
+    // Add timeout promise to prevent long-running queries
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout')), QUERY_TIMEOUT);
+    });
     
-    // Calculate pagination information
+    // Execute query with timeout
+    const [products, totalCount] = await Promise.race([
+      Promise.all([
+        prisma.products.findMany({
+          where,
+          take: limit,
+          skip,
+          orderBy: {
+            [sortBy]: sortOrder.toLowerCase()
+          }
+        }),
+        prisma.products.count({ where })
+      ]),
+      timeoutPromise
+    ]) as [any[], number];
+    
+    // Calculate pagination
     const totalPages = Math.ceil(totalCount / limit);
     const hasMore = page < totalPages;
     
-    // Return response
+    // Add cache headers for performance
+    const headers = new Headers();
+    headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
+    
     return NextResponse.json({
       products,
       pagination: {
@@ -80,12 +94,17 @@ export async function GET(request: Request) {
         pages: totalPages,
         hasMore
       }
-    });
+    }, { headers });
   } catch (error) {
     console.error('Error fetching products:', error);
+    
+    // Determine appropriate error response
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const status = errorMessage === 'Query timeout' ? 504 : 500;
+    
     return NextResponse.json(
-      { error: 'Failed to fetch products' }, 
-      { status: 500 }
+      { error: 'Failed to fetch products', message: errorMessage }, 
+      { status }
     );
   }
 }

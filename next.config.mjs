@@ -13,18 +13,6 @@ const nextConfig = {
     // Increase image cache duration
     minimumCacheTTL: 3600, // 1 hour
   },
-  experimental: {
-    // Use Turbopack instead of webpack
-    turbo: {
-      rules: {
-        // Opt-out specific import formats
-      }
-    },
-    // Enable fetch cache for API requests
-    fetchCache: true,
-    // Enable HTTP keep-alive
-    keepAlive: true,
-  },
   // Add custom headers for caching
   async headers() {
     return [
