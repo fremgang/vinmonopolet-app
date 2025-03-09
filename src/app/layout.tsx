@@ -63,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div>
                   <h3 className="text-white font-serif text-lg font-semibold mb-3">Vinmonopolet Explorer</h3>
                   <p className="text-sm">
-                    A web application to discover and explore Norway's finest wines and spirits.
+                    A web application to discover and explore Norway`&apos;`s finest wines and spirits.
                   </p>
                 </div>
                 
