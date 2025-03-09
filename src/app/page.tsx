@@ -90,11 +90,21 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, sortBy, sortOrder, filters]);
 
+  // Load more products for infinite scroll
+  const loadMoreProducts = useCallback(() => {
+    if (!hasMore || loading) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchProducts(nextPage);
+  }, [hasMore, loading, page, fetchProducts]);
+
   // Set up intersection observer for infinite scroll
   useEffect(() => {
     if (!loaderRef.current) return;
-
-    observerRef.current = new IntersectionObserver(
+    
+    const currentLoaderRef = loaderRef.current;
+    
+    const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading) {
           loadMoreProducts();
@@ -102,15 +112,13 @@ export default function Home() {
       },
       { threshold: 0.1 }
     );
-
-    observerRef.current.observe(loaderRef.current);
-
+    
+    observer.observe(currentLoaderRef);
+    
     return () => {
-      if (observerRef.current && loaderRef.current) {
-        observerRef.current.unobserve(loaderRef.current);
-      }
+      observer.unobserve(currentLoaderRef);
     };
-  }, [hasMore, loading]);
+  }, [hasMore, loading, loadMoreProducts]);
 
   // Main fetch function
   const fetchProducts = useCallback(async (pageNum: number, reset = false) => {
@@ -185,14 +193,6 @@ export default function Home() {
     }
   }, [debouncedSearch, sortBy, sortOrder, filters, loading]);
 
-  // Load more products for infinite scroll
-  const loadMoreProducts = () => {
-    if (!hasMore || loading) return;
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchProducts(nextPage);
-  };
-
   // Handle sort change
   const handleSortChange = (value: string | string[]) => {
     const selectedValue = Array.isArray(value) ? value[0] : value;
@@ -210,17 +210,68 @@ export default function Home() {
     setShowFilters(false);
   };
 
+  // Format price with Norwegian format
+  const formatPrice = (price: number | null) => {
+    if (price === null) return 'N/A';
+    return `${new Intl.NumberFormat('no-NO').format(price)} kr`;
+  };
+
+  // Render a table row for list view
+  const renderListItem = (product: Product) => {
+    return (
+      <div 
+        key={product.product_id}
+        className="list-table-row hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+        onClick={() => {
+          setSelectedProduct(product);
+          setModalOpen(true);
+        }}
+      >
+        <div className="list-table-cell image-cell">
+          <div className="product-image-container">
+            <img 
+              src={product.imageMain} 
+              alt={product.name}
+              onError={(e) => { e.currentTarget.src = '/wine-placeholder.svg' }}
+              className="product-image"
+            />
+          </div>
+        </div>
+        <div className="list-table-cell name-cell font-medium">
+          {product.name}
+        </div>
+        <div className="list-table-cell category-cell">
+          {product.category || '—'}
+        </div>
+        <div className="list-table-cell country-cell">
+          {product.country || '—'}
+        </div>
+        <div className="list-table-cell type-cell">
+          {product.varetype || '—'}
+        </div>
+        <div className="list-table-cell price-cell font-bold text-wine-800">
+          {formatPrice(product.price)}
+        </div>
+        <div className="list-table-cell availability-cell">
+          <span className="availability-badge">
+            {product.utvalg || '—'}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   // List view table header
   const renderListHeader = () => {
     return (
-      <div className="list-table-header mb-2">
-        <div className="col-span-1">Image</div>
-        <div className="col-span-3">Name</div>
-        <div className="col-span-2">Category</div>
-        <div className="col-span-1">Country</div>
-        <div className="col-span-2">Type</div>
-        <div className="col-span-1">Price</div>
-        <div className="col-span-2 text-right">Availability</div>
+      <div className="list-table-header">
+        <div className="list-table-cell image-cell">Image</div>
+        <div className="list-table-cell name-cell">Name</div>
+        <div className="list-table-cell category-cell">Category</div>
+        <div className="list-table-cell country-cell">Country</div>
+        <div className="list-table-cell type-cell">Type</div>
+        <div className="list-table-cell price-cell">Price</div>
+        <div className="list-table-cell availability-cell">Availability</div>
       </div>
     );
   };
@@ -367,23 +418,15 @@ export default function Home() {
           ))}
         </div>
       ) : (
-        // List View
-        <>
-          {renderListHeader()}
-          <div className="flex flex-col w-full">
-            {products.map(product => (
-              <ProductCard 
-                key={product.product_id} 
-                product={product} 
-                isGrid={false}
-                onClick={() => {
-                  setSelectedProduct(product);
-                  setModalOpen(true);
-                }}
-              />
-            ))}
+        // List View - Table style
+        <div className="overflow-x-auto w-full">
+          <div className="list-table">
+            {renderListHeader()}
+            <div className="list-table-body">
+              {products.map(product => renderListItem(product))}
+            </div>
           </div>
-        </>
+        </div>
       )}
       
       {/* Infinite scroll loader */}
