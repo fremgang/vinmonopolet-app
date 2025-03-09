@@ -31,12 +31,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en" className={`scroll-smooth ${montserrat.variable} ${playfair.variable}`}>
-      <body className="font-sans antialiased flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+      <body className="font-sans antialiased flex flex-col min-h-screen bg-congo-brown-50 dark:bg-gray-900 transition-colors duration-200">
         <Header />
         
         {/* Wrap content with ProductStreamProvider for real-time updates */}
         <ProductStreamProvider>
-          <main className="flex-1 pt-28 pb-12">
+          <main className="flex-1 pt-24 pb-12">
             <div className="max-w-7xl mx-auto px-4">
               {/* Main content */}
               {children}

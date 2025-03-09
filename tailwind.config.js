@@ -10,7 +10,19 @@ export default {
       },
       colors: {
         cream: '#F9F1E7',
-        accent: '#7f1d1d', // Wine red
+        'congo-brown': {
+          '50': 'var(--congo-brown-50, #fbf6f5)',
+          '100': 'var(--congo-brown-100, #f6ebea)',
+          '200': 'var(--congo-brown-200, #efdcd9)',
+          '300': 'var(--congo-brown-300, #e3c2be)',
+          '400': 'var(--congo-brown-400, #d19f98)',
+          '500': 'var(--congo-brown-500, #be7e75)',
+          '600': 'var(--congo-brown-600, #a8635a)',
+          '700': 'var(--congo-brown-700, #8c5149)',
+          '800': 'var(--congo-brown-800, #75453f)',
+          '900': 'var(--congo-brown-900, #643f3a)',
+          '950': 'var(--congo-brown-950, #341e1b)',
+        },
         wine: {
           50: 'var(--wine-50, #fcf5f5)',
           100: 'var(--wine-100, #f8e9e9)',
@@ -20,34 +32,9 @@ export default {
           500: 'var(--wine-500, #c95252)',
           600: 'var(--wine-600, #b93333)',
           700: 'var(--wine-700, #9c2727)',
-          800: 'var(--wine-800, #7f1d1d)', // Default wine color
+          800: 'var(--wine-800, #7f1d1d)',
           900: 'var(--wine-900, #671919)',
           950: 'var(--wine-950, #450505)',
-        },
-        burgundy: {
-          50: 'var(--burgundy-50, #fcf5f5)',
-          100: 'var(--burgundy-100, #f8e9e9)',
-          200: 'var(--burgundy-200, #f0d2d2)',
-          300: 'var(--burgundy-300, #e6b0b0)',
-          400: 'var(--burgundy-400, #d77e7e)',
-          500: 'var(--burgundy-500, #c95252)',
-          600: 'var(--burgundy-600, #b93333)',
-          700: 'var(--burgundy-700, #9c2727)',
-          800: 'var(--burgundy-800, #7f1d1d)',
-          900: 'var(--burgundy-900, #671919)',
-          950: 'var(--burgundy-950, #450505)',
-        },
-        sage: {
-          50: 'var(--sage-50, #f5f7f6)',
-          100: 'var(--sage-100, #e5e9e7)',
-          200: 'var(--sage-200, #d0d8d4)',
-          300: 'var(--sage-300, #b0bfb7)',
-          400: 'var(--sage-400, #91a599)',
-          500: 'var(--sage-500, #738b7d)',
-          600: 'var(--sage-600, #607a6c)',
-          700: 'var(--sage-700, #4c5e53)',
-          800: 'var(--sage-800, #3f4c46)',
-          900: 'var(--sage-900, #374239)',
         }
       },
       boxShadow: {

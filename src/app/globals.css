@@ -5,7 +5,20 @@
 
 /* Custom CSS Variables for Theme Colors */
 :root {
-  /* Wine color palette */
+  /* Congo Brown color palette */
+  --congo-brown-50: #fbf6f5;
+  --congo-brown-100: #f6ebea;
+  --congo-brown-200: #efdcd9;
+  --congo-brown-300: #e3c2be;
+  --congo-brown-400: #d19f98;
+  --congo-brown-500: #be7e75;
+  --congo-brown-600: #a8635a;
+  --congo-brown-700: #8c5149;
+  --congo-brown-800: #75453f;
+  --congo-brown-900: #643f3a;
+  --congo-brown-950: #341e1b;
+
+  /* Wine color palette (as fallback) */
   --wine-50: #fcf5f5;
   --wine-100: #f8e9e9;
   --wine-200: #f0d2d2;
@@ -17,31 +30,6 @@
   --wine-800: #7f1d1d;
   --wine-900: #671919;
   --wine-950: #450505;
-
-  /* Burgundy color palette */
-  --burgundy-50: #fcf5f5;
-  --burgundy-100: #f8e9e9;
-  --burgundy-200: #f0d2d2;
-  --burgundy-300: #e6b0b0;
-  --burgundy-400: #d77e7e;
-  --burgundy-500: #c95252;
-  --burgundy-600: #b93333;
-  --burgundy-700: #9c2727;
-  --burgundy-800: #7f1d1d;
-  --burgundy-900: #671919;
-  --burgundy-950: #450505;
-
-  /* Sage color palette */
-  --sage-50: #f5f7f6;
-  --sage-100: #e5e9e7;
-  --sage-200: #d0d8d4;
-  --sage-300: #b0bfb7;
-  --sage-400: #91a599;
-  --sage-500: #738b7d;
-  --sage-600: #607a6c;
-  --sage-700: #4c5e53;
-  --sage-800: #3f4c46;
-  --sage-900: #374239;
 }
 
 /* Table-style list view */
@@ -50,15 +38,15 @@
 }
 
 .product-table-header {
-  @apply bg-gray-100 dark:bg-gray-800 font-medium text-left border-b border-gray-300 dark:border-gray-700 sticky top-0 z-10;
+  @apply bg-congo-brown-50 dark:bg-congo-brown-950 font-medium text-left border-b border-congo-brown-200 dark:border-congo-brown-900 sticky top-0 z-10;
 }
 
 .product-table-header th {
-  @apply px-4 py-3 font-semibold text-gray-600 dark:text-gray-300;
+  @apply px-4 py-3 font-semibold text-congo-brown-900 dark:text-congo-brown-200;
 }
 
 .product-table-body tr {
-  @apply border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors;
+  @apply border-b border-congo-brown-100 dark:border-congo-brown-900 hover:bg-congo-brown-50 dark:hover:bg-congo-brown-900 cursor-pointer transition-colors;
 }
 
 .product-table-body td {
@@ -74,11 +62,11 @@
 }
 
 .price-cell {
-  @apply font-bold text-wine-800 dark:text-wine-400;
+  @apply font-bold text-congo-brown-700 dark:text-congo-brown-300;
 }
 
 .availability-badge {
-  @apply inline-block text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200;
+  @apply inline-block text-xs px-2 py-1 rounded-full bg-congo-brown-100 dark:bg-congo-brown-800 text-congo-brown-800 dark:text-congo-brown-200;
 }
 
 /* Theme transitions */
@@ -93,6 +81,12 @@
 
 .product-card:hover {
   @apply shadow-lg transform -translate-y-1;
+}
+
+/* Flat header styles */
+.flat-header {
+  @apply border-b border-congo-brown-200 dark:border-congo-brown-900;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* Animations */

@@ -29,7 +29,7 @@ export default function ProductCard({ product, isGrid = true, onClick }: Product
   return (
     <Card
       hoverable
-      className="product-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden"
+      className="product-card bg-white dark:bg-gray-800 border border-congo-brown-100 dark:border-congo-brown-800 overflow-hidden"
       onClick={onClick}
     >
       <div className="flex flex-col h-full">
@@ -56,12 +56,12 @@ export default function ProductCard({ product, isGrid = true, onClick }: Product
           {/* Category and country badges */}
           <div className="flex flex-wrap gap-1 mt-1 mb-2">
             {category && (
-              <span className="inline-block px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+              <span className="inline-block px-2 py-1 text-xs rounded-full bg-congo-brown-100 dark:bg-congo-brown-900 text-congo-brown-800 dark:text-congo-brown-200">
                 {category}
               </span>
             )}
             {country && (
-              <span className="inline-block px-2 py-1 text-xs rounded-full bg-wine-100 dark:bg-wine-900 text-wine-800 dark:text-wine-200">
+              <span className="inline-block px-2 py-1 text-xs rounded-full bg-congo-brown-200 dark:bg-congo-brown-800 text-congo-brown-700 dark:text-congo-brown-100">
                 {country}
               </span>
             )}
@@ -73,7 +73,7 @@ export default function ProductCard({ product, isGrid = true, onClick }: Product
                 {utvalg}
               </span>
             )}
-            <div className="text-lg font-bold text-wine-800 dark:text-wine-400 ml-auto">
+            <div className="text-lg font-bold text-congo-brown-700 dark:text-congo-brown-300 ml-auto">
               {formatPrice(price)}
             </div>
           </div>
