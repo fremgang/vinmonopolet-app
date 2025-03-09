@@ -84,7 +84,7 @@ export default function Home() {
     setPagination(null);
   }, [debouncedSearch, sortBy, sortOrder, filters]);
 
-  // Main fetch function - DEFINE THIS FIRST
+  // Main fetch function - DEFINED BEFORE loadMoreProducts
   const fetchProducts = useCallback(async (pageNum: number, reset = false) => {
     if (loading) return;
     
@@ -163,7 +163,7 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, sortBy, sortOrder, filters]);
 
-  // Load more products for infinite scroll - DEFINE THIS SECOND
+  // Load more products for infinite scroll - AFTER fetchProducts is defined
   const loadMoreProducts = useCallback(() => {
     if (!hasMore || loading) return;
     const nextPage = page + 1;
