@@ -1,6 +1,7 @@
 // src/app/api/products/route.ts
+import { prisma } from '@/app/layout';
 import { NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
+
 
 // Define valid sort options
 const validSortFields = ['product_id', 'name', 'price', 'category', 'country', 'district'];
