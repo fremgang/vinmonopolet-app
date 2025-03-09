@@ -1,7 +1,8 @@
 // src/components/ProductCard.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Product } from '@/app/page';
+import ImageCache from '@/utils/imageCache';
 
 interface ProductCardProps {
   product: Product;
@@ -20,7 +21,13 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
     producer,
     district
   } = product;
-
+  
+  // Local state to track if image failed to load
+  const [imageError, setImageError] = useState<boolean>(
+    // Initialize to true if we already know it's a placeholder
+    ImageCache.isPlaceholder(imageMain)
+  );
+  
   // Function to format price with Norwegian format
   const formatPrice = (price: number | null) => {
     if (price === null) return 'N/A';
@@ -34,7 +41,7 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       role="button"
       tabIndex={0}
     >
-      {/* Card Header with Product Name */}
+      {/* Card Header with Centered Product Name */}
       <div className="product-card-header">
         <h3 className="product-card-title">{name}</h3>
       </div>
@@ -43,22 +50,37 @@ export default function ProductCard({ product, onClick }: ProductCardProps) {
       <div className="product-card-body">
         {/* Image Container with fixed dimensions */}
         <div className="product-card-image-container">
-          <Image
-            src={imageMain}
-            alt={name}
-            width={120}
-            height={180}
-            className="product-card-image"
-            sizes="(max-width: 768px) 120px, 120px"
-            priority={false}
-            loading="lazy"
-            unoptimized={imageMain.includes('vinmonopolet.no')}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = '/file.svg';
-              target.classList.add('opacity-50');
-            }}
-          />
+          {!imageError ? (
+            <Image
+              src={imageMain}
+              alt={name}
+              width={120}
+              height={180}
+              className="product-card-image"
+              sizes="(max-width: 768px) 120px, 120px"
+              priority={false}
+              loading="lazy"
+              onError={() => {
+                // Mark this image as a placeholder in our global cache
+                ImageCache.markAsPlaceholder(imageMain);
+                setImageError(true);
+              }}
+              onLoad={() => {
+                // Record successful load in our cache
+                ImageCache.markAsLoaded(imageMain);
+              }}
+            />
+          ) : (
+            // Use static placeholder for failed images - this is a LOCAL file, not from vinmonopolet.no
+            <Image
+              src="/bottle-placeholder.png"
+              alt="Product image placeholder"
+              width={120}
+              height={180}
+              className="product-card-image opacity-60"
+              sizes="(max-width: 768px) 120px, 120px"
+            />
+          )}
         </div>
 
         {/* Content Section */}
