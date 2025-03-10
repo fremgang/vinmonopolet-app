@@ -106,59 +106,47 @@ export default function Home() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loaderRef = useRef<HTMLDivElement | null>(null);
   
-  // Preload data during splash screen
-  const preloadData = useCallback(async () => {
-    try {
-      // Start fetching random data during splash screen
-      const queryParams = new URLSearchParams({
-        random: 'true',
-        limit: '50'
+// Updated preloadData function - remove CSS preloading
+const preloadData = useCallback(async () => {
+  try {
+    // Start fetching random data during splash screen
+    const queryParams = new URLSearchParams({
+      random: 'true',
+      limit: '50'
+    });
+    
+    // Prefetch random products (will be cached)
+    const response = await fetch(`/api/products?${queryParams.toString()}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      // Store the preloaded data to use when splash screen ends
+      setProducts(data.products);
+      setPagination(data.pagination);
+      setHasMore(data.pagination.hasMore);
+      
+      // Start loading product images
+      const imagePromises = data.products.slice(0, 9).map((product: { imageMain: any; }) => {
+        return new Promise((resolve) => {
+          const img = new window.Image();
+          img.onload = resolve;
+          img.onerror = resolve; // Still resolve on error to not block
+          img.src = product.imageMain;
+        });
       });
       
-      // Prefetch random products (will be cached)
-      const response = await fetch(`/api/products?${queryParams.toString()}`);
+      // Wait for the first few images to load
+      await Promise.allSettled(imagePromises);
       
-      if (response.ok) {
-        const data = await response.json();
-        // Store the preloaded data to use when splash screen ends
-        setProducts(data.products);
-        setPagination(data.pagination);
-        setHasMore(data.pagination.hasMore);
-        
-        // Start loading product images
-        const imagePromises = data.products.slice(0, 9).map((product: { imageMain: any; }) => {
-          return new Promise((resolve) => {
-            const img = new window.Image();
-            img.onload = resolve;
-            img.onerror = resolve; // Still resolve on error to not block
-            img.src = product.imageMain;
-          });
-        });
-        
-        // Wait for the first few images to load
-        await Promise.allSettled(imagePromises);
-        
-        // Pre-load CSS, fonts, and other assets
-        const cssPromises = [
-          '/globals.css'
-        ].map(url => {
-          return new Promise((resolve) => {
-            const link = document.createElement('link');
-            link.rel = 'preload';
-            link.as = 'style';
-            link.href = url;
-            link.onload = resolve;
-            link.onerror = resolve; // Still resolve on error
-            document.head.appendChild(link);
-          });
-        });
-        
-        await Promise.allSettled(cssPromises);
-      }
-    } catch (err) {
-      console.error('Error during preload:', err);
+      // Set product transition state to loaded
+      setTimeout(() => {
+        setProductTransitionState('loaded');
+      }, 100);
     }
-  }, []);
+  } catch (err) {
+    console.error('Error during preload:', err);
+  }
+}, []);
   
   // Hide splash screen after timeout
   useEffect(() => {
