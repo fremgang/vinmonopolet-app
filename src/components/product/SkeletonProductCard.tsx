@@ -1,4 +1,4 @@
-// src/components/SkeletonProductCard.tsx
+// src/components/product/SkeletonProductCard.tsx
 import React from 'react';
 
 interface SkeletonProductCardProps {
@@ -11,7 +11,7 @@ const SkeletonProductCard: React.FC<SkeletonProductCardProps> = ({
   const animationClass = animated ? 'animate-pulse' : '';
   
   return (
-    <div className="product-card h-full shadow-sm border border-neutral-200 bg-white">
+    <div className="product-card h-full">
       {/* Card Header with Skeleton Title */}
       <div className="product-card-header">
         <div className={`h-6 bg-neutral-200 rounded-md w-4/5 mx-auto ${animationClass}`} />
@@ -20,8 +20,8 @@ const SkeletonProductCard: React.FC<SkeletonProductCardProps> = ({
       {/* Card Body with Skeleton Image and Content */}
       <div className="product-card-body">
         {/* Skeleton Image Container */}
-        <div className="product-card-image-container">
-          <div className={`w-24 h-36 mx-auto bg-neutral-200 rounded-md ${animationClass}`} />
+        <div className="product-card-image-container flex items-center justify-center">
+          <div className={`w-24 h-36 bg-neutral-200 rounded-md ${animationClass}`} />
         </div>
 
         {/* Skeleton Content Section */}
@@ -49,6 +49,11 @@ const SkeletonProductCard: React.FC<SkeletonProductCardProps> = ({
           <div className="product-card-info-line">
             <div className={`h-4 bg-neutral-200 rounded-md w-1/3 ${animationClass}`} />
             <div className={`h-4 bg-neutral-200 rounded-md w-1/4 ${animationClass}`} />
+          </div>
+          
+          {/* Skeleton District */}
+          <div className="product-card-info-line">
+            <div className={`h-4 bg-neutral-200 rounded-md w-2/5 ${animationClass}`} />
           </div>
           
           {/* Skeleton Price and Producer */}

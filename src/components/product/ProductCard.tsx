@@ -1,11 +1,21 @@
-// src/components/product/ProductCard.tsx
+// src/components/product/ProductCard.tsx - Fixed footer position
 import React, { useState, useEffect, forwardRef } from 'react';
 import Image from 'next/image';
 import { Product } from '@/types';
+import { 
+  Card, 
+  CardHeader, 
+  CardContent, 
+  CardFooter, 
+  CardTitle
+} from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import SkeletonProductCard from './SkeletonProductCard';
 
 interface ProductCardProps {
   product: Product;
   onClick?: () => void;
+  isLoading?: boolean;
 }
 
 // Helper function to get cached image URL
@@ -14,8 +24,38 @@ const getCachedImageUrl = (originalUrl: string, skipCache = false) => {
   return `/api/products/image-cache?url=${encodeURIComponent(originalUrl)}${skipCache ? '&skipCache=true' : ''}`;
 };
 
+// Helper to extract main category, dropping subcategories
+const getMainCategory = (category: string | null): string => {
+  if (!category) return '';
+  // Extract first part of category (before first hyphen)
+  const mainCategory = category.split('-')[0].trim();
+  return mainCategory;
+};
+
+// Helper to extract main region, dropping subregions
+const getMainRegion = (district: string | null): string => {
+  if (!district) return '';
+  // Sometimes districts have commas or other separators
+  return district.split(',')[0].trim();
+};
+
 const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
-  ({ product, onClick }, ref) => {
+  ({ product, onClick, isLoading = false }, ref) => {
+    // Always declare all hooks at the top level
+    const [imageError, setImageError] = useState<boolean>(false);
+    const [usedDirectUrl, setUsedDirectUrl] = useState<boolean>(false);
+    
+    // Reset states if product changes
+    useEffect(() => {
+      setImageError(false);
+      setUsedDirectUrl(false);
+    }, [product.product_id]);
+    
+    // If in loading state, render skeleton
+    if (isLoading) {
+      return <SkeletonProductCard />;
+    }
+    
     const {
       name,
       category,
@@ -24,13 +64,13 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
       imageMain,
       lukt,
       smak,
-      producer,
-      district
+      district,
+      utvalg
     } = product;
     
-    // Local state to track if image failed to load
-    const [imageError, setImageError] = useState<boolean>(false);
-    const [usedDirectUrl, setUsedDirectUrl] = useState<boolean>(false);
+    // Get simplified values
+    const mainCategory = getMainCategory(category);
+    const mainRegion = getMainRegion(district);
     
     // Get cached image URL
     const cachedImageUrl = imageMain ? getCachedImageUrl(imageMain) : '';
@@ -54,103 +94,98 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
       }
     };
 
-    // Reset states if product changes
-    useEffect(() => {
-      setImageError(false);
-      setUsedDirectUrl(false);
-    }, [imageMain]);
-
     // Current image URL based on state
     const currentImageUrl = usedDirectUrl ? imageMain : cachedImageUrl;
 
     return (
-      <div 
-        className="product-card"
-        onClick={onClick}
-        role="button"
-        tabIndex={0}
+      <Card 
         ref={ref}
+        onClick={onClick}
+        className="cursor-pointer h-full transition-all duration-200 hover:shadow-md hover:-translate-y-1 flex flex-col"
       >
-        {/* Card Header with Centered Product Name */}
-        <div className="product-card-header">
-          <h3 className="product-card-title">{name}</h3>
-        </div>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg line-clamp-2 text-center font-serif">{name}</CardTitle>
+        </CardHeader>
         
-        {/* Card Body with Image and Information */}
-        <div className="product-card-body">
-          {/* Image Container with fixed dimensions */}
-          <div className="product-card-image-container">
+        <CardContent className="p-4 flex flex-col md:flex-row gap-4 flex-grow">
+          {/* Image Container - with explicit white background and class for targeting */}
+          <div className="flex items-center justify-center w-full md:w-2/5 h-[160px] bg-white rounded p-2 border border-gray-100 image-container product-image-wrapper">
             {!imageError && currentImageUrl ? (
               <Image
                 src={currentImageUrl}
                 alt={name}
-                width={120}
-                height={180}
-                className="product-card-image"
-                sizes="(max-width: 768px) 120px, 120px"
+                width={100}
+                height={160}
+                className="max-h-[140px] w-auto object-contain"
+                sizes="(max-width: 768px) 100px, 100px"
                 priority={false}
                 loading="lazy"
                 onError={handleImageError}
               />
             ) : (
-              // Use static placeholder for failed images
-              <div className="flex items-center justify-center w-full h-full bg-gray-100">
-                <div className="text-gray-400 text-sm text-center p-2">
-                  {imageError ? "No image available" : "Loading..."}
-                </div>
+              <div className="flex items-center justify-center w-full h-full text-gray-400">
+                {imageError ? "No image available" : "Loading..."}
               </div>
             )}
           </div>
-
-          {/* Content Section */}
-          <div className="product-card-content">
+          
+          {/* Content Container - Simplified to just focus on aroma and taste */}
+          <div className="flex flex-col gap-3 w-full md:w-3/5">
             {/* Aroma Section */}
             {lukt && (
-              <div className="product-card-section">
-                <div className="product-card-section-title">AROMA</div>
-                <p className="product-card-section-content">{lukt}</p>
+              <div className="space-y-1">
+                <h4 className="text-xs uppercase font-semibold text-neutral-800">Aroma</h4>
+                <p className="text-sm text-gray-700 line-clamp-3">{lukt}</p>
               </div>
             )}
             
             {/* Taste Section */}
             {smak && (
-              <div className="product-card-section">
-                <div className="product-card-section-title">SMAK</div>
-                <p className="product-card-section-content">{smak}</p>
+              <div className="space-y-1">
+                <h4 className="text-xs uppercase font-semibold text-neutral-800">Taste</h4>
+                <p className="text-sm text-gray-700 line-clamp-3">{smak}</p>
               </div>
             )}
           </div>
-        </div>
-
-        {/* Card Footer with Details */}
-        <div className="product-card-footer">
-          <div className="product-card-details">
-            {/* Category and Country */}
-            <div className="product-card-info-line">
-              <span className="product-card-category">{category || '—'}</span>
-              <span className="product-card-country">{country || '—'}</span>
+        </CardContent>
+        
+        <CardFooter className="bg-gray-50 border-t p-4 mt-auto">
+          <div className="w-full flex">
+            {/* Price on the left */}
+            <div className="text-lg font-bold text-neutral-900 mr-auto self-center">
+              {formatPrice(price)}
             </div>
             
-            {/* District/Region if available */}
-            {district && (
-              <div className="product-card-info-line">
-                <span className="product-card-district">{district}</span>
-              </div>
-            )}
-            
-            {/* Price and Producer on the same line with proper truncation */}
-            <div className="product-card-info-line">
-              <span className="product-card-price">{formatPrice(price)}</span>
-              {producer && <span className="product-card-producer">{producer}</span>}
+            {/* Metadata on separate lines, aligned right */}
+            <div className="text-right text-xs self-end">
+              {/* Country and Region */}
+              {country && (
+                <div className="font-medium text-neutral-700">
+                  {country} {mainRegion && `(${mainRegion})`}
+                </div>
+              )}
+              
+              {/* Main Category */}
+              {mainCategory && (
+                <div className="font-normal text-neutral-600">
+                  {mainCategory}
+                </div>
+              )}
+              
+              {/* Utvalg */}
+              {utvalg && (
+                <div className="italic font-light text-neutral-500">
+                  {utvalg}
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     );
   }
 );
 
-// Add display name for debugging
 ProductCard.displayName = 'ProductCard';
 
 export default ProductCard;

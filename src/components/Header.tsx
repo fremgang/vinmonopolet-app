@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Button } from '@geist-ui/core';
+import { Button } from '@/components/ui/button';
 import { Menu, Wine, ShoppingBag, Search } from 'lucide-react';
 
 export default function Header() {
@@ -36,26 +36,25 @@ export default function Header() {
             </nav>
             
             {/* Quick search icon */}
-            <button 
-              className="p-2 text-white hover:text-white/90 transition-colors rounded-full hover:bg-white/10"
-              aria-label="Search"
-            >
-              <Search size={20} />
-            </button>
+            <Button 
+  size="sm" // Use sm size instead of auto
+  onClick={() => setMenuOpen(!menuOpen)}
+  variant="ghost" // Use ghost variant instead of abort type
+  className="text-white"
+>
+  <Menu size={22} />
+</Button>
           </div>
 
           {/* Mobile menu toggle */}
           <div className="md:hidden">
             <Button 
-              auto 
-              icon={<Menu size={22} />} 
               onClick={() => setMenuOpen(!menuOpen)}
-              type="abort"
+              type="reset"
               className="text-white"
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
-              placeholder={undefined}
-            />
+            >
+              <Menu size={22} />
+            </Button>
           </div>
         </div>
         

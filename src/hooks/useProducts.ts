@@ -2,16 +2,16 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import useProductCache from './useProductCache'; // Your existing cache hook
 import { Product, PaginationInfo, ProductFilters, ProductSort, LoadingState } from '@/types';
-
 export function useProducts() {
   // Product data state
   const [products, setProducts] = useState<Product[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
-  
+
   // Loading states
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadingState, setLoadingState] = useState<LoadingState>('loading');
+  
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
@@ -24,6 +24,13 @@ export function useProducts() {
     categories: [],
     priceRange: [0, 100000]
   });
+
+  const ensureLoadedState = useCallback(() => {
+    if (products.length > 0) {
+      setLoadingState('loaded');
+      setInitialLoading(false);
+    }
+  }, [products.length, setLoadingState, setInitialLoading]);
   
   const [sort, setSort] = useState<ProductSort>({
     field: 'price',
@@ -118,12 +125,10 @@ export function useProducts() {
   
   // Load products with current filters and sort
   const loadProducts = useCallback(async (pageNum: number, reset = false) => {
-    if (loading) return;
-    
     try {
       setLoading(true);
       setError(null);
-      setLoadingState('loading');
+      setLoadingState('loading'); // Set to loading when starting
       
       // Check if sorting by price - if so, ensure UI shows we're excluding N/A prices
       if (sort.field === 'price') {
@@ -152,12 +157,15 @@ export function useProducts() {
         const newProducts = reset ? result.products : [...prev, ...result.products];
         
         // After a short delay, transition to the loaded state
-        setTimeout(() => {
-          setLoadingState('loaded');
-        }, 300);
-        
-        return newProducts;
-      });
+      // IMPORTANT: Force loading state to 'loaded' here
+      setTimeout(() => {
+        setLoadingState('loaded');
+        setInitialLoading(false);
+      }, 100);
+      
+      return newProducts;
+      }
+      );
       
       // After we load the current page, prefetch the next page
       if (result.pagination.hasMore) {
@@ -181,9 +189,9 @@ export function useProducts() {
     } finally {
       setLoading(false);
       setInitialLoading(false);
-      setInitialDataLoaded(true);
+      setLoadingState('loaded');
     }
-  }, [filters, sort, loading, fetchProducts, prefetchProducts]);
+  }, [filters, sort, fetchProducts, prefetchProducts]);
   
   // Load more products (for infinite scrolling)
   const loadMoreProducts = useCallback(() => {
@@ -192,18 +200,6 @@ export function useProducts() {
     setPage(nextPage);
     loadProducts(nextPage, false);
   }, [hasMore, loading, page, loadProducts]);
-  
-  // Ensure loading state is correct
-  const ensureLoadedState = useCallback(() => {
-    if (products.length > 0 && loadingState === 'loading') {
-      console.log('Products available but in loading state, forcing transition');
-      setLoadingState('loaded');
-      
-      if (initialLoading) {
-        setInitialLoading(false);
-      }
-    }
-  }, [products.length, loadingState, initialLoading]);
   
   // Effect to ensure loaded state periodically
   useEffect(() => {
@@ -250,6 +246,16 @@ export function useProducts() {
       }
     };
   }, [hasMore, loading, loadMoreProducts, initialDataLoaded]);
+
+  useEffect(() => {
+    console.log('Products length:', products.length);
+    console.log('Loading state:', loadingState);
+    console.log('Initial loading:', initialLoading);
+    
+    if (products.length > 0) {
+      console.log('Sample product:', products[0]);
+    }
+  }, [products.length, loadingState, initialLoading]);
   
   // Return all the state and functions
   return {
@@ -262,6 +268,7 @@ export function useProducts() {
     loading,
     initialLoading,
     loadingState,
+    setLoadingState,
     error,
     
     // Filters and sorting

@@ -1,4 +1,4 @@
-// src/hooks/useProductCache.ts - Improved version with better caching
+// src/hooks/useProductCache.ts - Fixed version for abort controller cleanup and function memoization
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Product, ProductResponse } from '@/types';
 
@@ -69,8 +69,8 @@ export default function useProductCache() {
     return () => clearTimeout(saveTimer);
   }, [currentCache]);
 
-  // Generate normalized cache key from query parameters
-  const getCacheKey = (params: URLSearchParams) => {
+  // Generate normalized cache key from query parameters - memoized with useCallback
+  const getCacheKey = useCallback((params: URLSearchParams) => {
     // Clone the params to avoid modifying the original
     const normalizedParams = new URLSearchParams(params.toString());
     
@@ -79,7 +79,7 @@ export default function useProductCache() {
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([key, value]) => `${key}=${value}`)
       .join('&');
-  };
+  }, []);
 
   // Fetch products with caching
   const fetchProducts = useCallback(async (
@@ -168,6 +168,7 @@ export default function useProductCache() {
       abortControllersRef.current[cacheKey].abort();
     }
     abortControllersRef.current[cacheKey] = new AbortController();
+    const controller = abortControllersRef.current[cacheKey];
     
     try {
       setLoading(true);
@@ -175,7 +176,7 @@ export default function useProductCache() {
       
       // Fetch data from API
       const response = await fetch(`/api/products?${queryParams.toString()}`, {
-        signal: abortControllersRef.current[cacheKey].signal,
+        signal: controller.signal,
         headers: {
           'Accept': 'application/json',
           'Cache-Control': 'no-cache' // Prevent browser caching
@@ -229,7 +230,7 @@ export default function useProductCache() {
       setLoading(false);
       fetchingRef.current.delete(cacheKey);
     }
-  }, [currentCache]);
+  }, [currentCache, getCacheKey]);
 
   // Prefetch next batch of products
   const prefetchProducts = useCallback(async (
@@ -286,16 +287,17 @@ export default function useProductCache() {
     fetchingRef.current.add(cacheKey);
     console.log(`Prefetching page ${nextPage}`);
     
+    // Create abort controller for this request
+    if (abortControllersRef.current[cacheKey]) {
+      abortControllersRef.current[cacheKey].abort();
+    }
+    abortControllersRef.current[cacheKey] = new AbortController();
+    const controller = abortControllersRef.current[cacheKey];
+    
     try {
-      // Create abort controller for this request
-      if (abortControllersRef.current[cacheKey]) {
-        abortControllersRef.current[cacheKey].abort();
-      }
-      abortControllersRef.current[cacheKey] = new AbortController();
-      
       // Prefetch with lower priority
       const response = await fetch(`/api/products?${queryParams.toString()}`, {
-        signal: abortControllersRef.current[cacheKey].signal,
+        signal: controller.signal,
         priority: 'low' as any, // Lower priority for prefetch
         headers: {
           'Accept': 'application/json',
@@ -334,12 +336,16 @@ export default function useProductCache() {
     } finally {
       fetchingRef.current.delete(cacheKey);
     }
-  }, [currentCache]);
+  }, [currentCache, getCacheKey]);
 
   // Clean up function - abort any in-progress requests
   useEffect(() => {
+    // Copy the current controllers to a local variable that won't change
+    const controllers = { ...abortControllersRef.current };
+    
     return () => {
-      Object.values(abortControllersRef.current).forEach(controller => {
+      // Use the captured controllers in the cleanup
+      Object.values(controllers).forEach(controller => {
         controller.abort();
       });
     };

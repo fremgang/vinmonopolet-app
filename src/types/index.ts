@@ -88,13 +88,16 @@ export type VirtualItem = {
 };
 
 /**
- * Options for virtualization hook
- * Configuration for virtualized rendering
+ * Enhanced options for virtualization hook
+ * Includes support for skeleton preloading
  */
 export type VirtualizationOptions<T> = {
-  items: T[];            // Array of items to virtualize
-  itemHeight?: number;   // Height of each item in pixels
-  overscan?: number;     // Number of items to render outside visible area
+  items: T[];               // Array of items to virtualize
+  itemHeight?: number;      // Height of each item in pixels
+  overscan?: number;        // Number of items to render outside visible area
+  columnCount?: number;     // Number of columns in the grid (can be dynamic)
+  skeletonPageSize?: number; // Number of items per skeleton page
+  totalSkeletonPages?: number; // Total number of skeleton pages to manage
 };
 
 /**
@@ -136,4 +139,28 @@ export type DebugStateMonitorProps = {
   setLoadingState: (state: LoadingState) => void;
   setInitialLoading: (loading: boolean) => void;
   showSplashScreen: boolean;
+};
+
+/**
+ * Enhanced window information for virtual rendering
+ * Includes more details about the current view
+ */
+export type VirtualWindow = {
+  start: number;     // Start index of visible window
+  end: number;       // End index of visible window
+  itemCount: number; // Total number of items
+};
+
+
+
+/**
+ * Skeleton rendering configuration
+ * Controls how skeleton cards are displayed
+ */
+export type SkeletonRenderOptions = {
+  skeletonCount: number;       // Number of skeleton items per page
+  loadMoreSkeletonCount: number; // Number of skeletons to show during "load more"
+  totalSkeletonPages: number;  // Total number of skeleton pages to pre-render
+  initialAnimated: boolean;    // Whether initial skeletons should be animated
+  loadMoreAnimated: boolean;   // Whether "load more" skeletons should be animated
 };

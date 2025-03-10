@@ -34,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans antialiased flex flex-col min-h-screen bg-cream dark:bg-gray-900 transition-colors duration-200">
         <Header />
         
-        {/* Wrap content with ProductStreamProvider for real-time updates */}
+
         <ProductStreamProvider>
           <main className="flex-1 pt-24 pb-12">
             <div className="max-w-7xl mx-auto px-4">
