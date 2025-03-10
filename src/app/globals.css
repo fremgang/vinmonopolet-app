@@ -389,7 +389,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--neutral-100);
+  border: 1px solid var(white);
   border-radius: var(--radius);
 }
 
@@ -426,6 +426,7 @@ main {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
 }
 
