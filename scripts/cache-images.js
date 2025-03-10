@@ -98,7 +98,9 @@ async function cacheImage(url) {
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 Vinmonopolet Explorer'
-      }
+      },
+      redirect: 'follow',
+      follow: 10
     });
     
     if (!response.ok) {
@@ -227,13 +229,13 @@ async function main() {
   console.log(`Estimated storage needed: ${estimatedStorage}`);
   
   // Ask for confirmation
-  const rl = readline.createInterface({
+  const read_line = readline.createInterface({
     input: process.stdin,
     output: process.stdout
   });
   
-  rl.question(`Do you want to continue? (y/n) `, async (answer) => {
-    rl.close();
+  read_line.question(`Do you want to continue? (y/n) `, async (answer) => {
+    read_line.close();
     
     if (answer.toLowerCase() !== 'y') {
       console.log('Aborted');

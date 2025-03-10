@@ -70,12 +70,8 @@ export function useProducts() {
   }, []);
   
   // Parse sort string (e.g., "price:desc")
-  const handleSortChange = useCallback((sortString: string | string[]) => {
-    // Since we're working with single-select, we can safely assume it's a string
-    // But handle array case for type safety
-    const value = Array.isArray(sortString) ? sortString[0] : sortString;
-    
-    const [field, order] = value.split(':') as [ProductSort['field'], ProductSort['order']];
+  const handleSortChange = useCallback((sortString: string) => {
+    const [field, order] = sortString.split(':') as [ProductSort['field'], ProductSort['order']];
     updateSort({ field, order });
   }, [updateSort]);
   
