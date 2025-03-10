@@ -9,7 +9,7 @@ import readline from 'readline';
 const prisma = new PrismaClient();
 const CONCURRENCY = 5; // Number of concurrent requests
 const CACHE_DIR = path.join(process.cwd(), '.image-cache');
-const BATCH_SIZE = 50; // Number of products to process in each batch
+const BATCH_SIZE = 20; // Number of products to process in each batch
 
 // Image sizes available on vinmonopolet.no
 const IMAGE_SIZES = {
