@@ -5,6 +5,9 @@
 
 /* Root CSS Variables */
 :root {
+
+  --white: #ffffff;
+  --black: #000000;
   /* Primary palette - wine theme */
   --wine-red: #8c1c13;     /* Primary brand color */
   --wine-red-light: #b32c1b; /* Lighter shade for hover */
@@ -352,7 +355,7 @@ main {
 
 .product-card-header {
   padding: var(--space-4);
-  border-bottom: 1px solid var(--neutral-100);
+  border-bottom: 1px solid var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -389,7 +392,7 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(white);
+  border: 1px var(--white);
   border-radius: var(--radius);
 }
 
@@ -579,7 +582,7 @@ main {
 /* Improved image containers */
 .product-image-wrapper {
   background-color: white !important;
-  border: 1px solid var(--neutral-100);
+  border: 1px solid var(--white);
   border-radius: var(--radius);
   display: flex;
   align-items: center;
@@ -592,7 +595,7 @@ main {
 .dark .product-card-image-container,
 .dark .product-image-wrapper {
   background-color: white !important;
-  border-color: var(--neutral-700);
+  border-color: var(--white);
 }
 
 /* Splash screen styling */
