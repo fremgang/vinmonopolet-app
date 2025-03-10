@@ -1,4 +1,4 @@
-// src/components/SplashScreen.tsx
+// src/components/layout/SplashScreen.tsx
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Text } from '@geist-ui/core';
@@ -6,7 +6,7 @@ import { Text } from '@geist-ui/core';
 interface SplashScreenProps {
   redirectPath?: string;
   loadingTime?: number; // in seconds
-  onPreload?: () => Promise<void>; // Add a preload callback
+  onPreload?: () => Promise<boolean | void>; // Updated type to accept boolean or void
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({

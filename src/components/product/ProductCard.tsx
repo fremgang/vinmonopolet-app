@@ -1,8 +1,7 @@
-// src/components/ProductCard.tsx - Updated with image caching
+// src/components/product/ProductCard.tsx
 import React, { useState, useEffect, forwardRef } from 'react';
 import Image from 'next/image';
-import { Product } from '@/app/page';
-import ImageCache from '@/utils/imageCache';
+import { Product } from '@/types';
 
 interface ProductCardProps {
   product: Product;
@@ -10,9 +9,9 @@ interface ProductCardProps {
 }
 
 // Helper function to get cached image URL
-const getCachedImageUrl = (originalUrl: string) => {
-  // Use our API route to serve cached images
-  return `/api/image-cache?url=${encodeURIComponent(originalUrl)}`;
+const getCachedImageUrl = (originalUrl: string, skipCache = false) => {
+  if (!originalUrl) return '';
+  return `/api/products/image-cache?url=${encodeURIComponent(originalUrl)}${skipCache ? '&skipCache=true' : ''}`;
 };
 
 const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
@@ -30,19 +29,39 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
     } = product;
     
     // Local state to track if image failed to load
-    const [imageError, setImageError] = useState<boolean>(
-      // Initialize to true if we already know it's a placeholder
-      ImageCache.isPlaceholder(imageMain)
-    );
+    const [imageError, setImageError] = useState<boolean>(false);
+    const [usedDirectUrl, setUsedDirectUrl] = useState<boolean>(false);
     
     // Get cached image URL
-    const cachedImageUrl = getCachedImageUrl(imageMain);
+    const cachedImageUrl = imageMain ? getCachedImageUrl(imageMain) : '';
     
     // Function to format price with Norwegian format
     const formatPrice = (price: number | null) => {
       if (price === null) return 'N/A';
       return `${new Intl.NumberFormat('no-NO').format(price)} kr`;
     };
+
+    // Handle image load error
+    const handleImageError = () => {
+      if (!usedDirectUrl && imageMain) {
+        // If cached image failed, try direct URL as fallback
+        console.log(`Cached image failed, trying direct URL: ${imageMain}`);
+        setUsedDirectUrl(true);
+      } else {
+        // If direct URL also failed, show placeholder
+        console.error(`Image failed to load: ${usedDirectUrl ? imageMain : cachedImageUrl}`);
+        setImageError(true);
+      }
+    };
+
+    // Reset states if product changes
+    useEffect(() => {
+      setImageError(false);
+      setUsedDirectUrl(false);
+    }, [imageMain]);
+
+    // Current image URL based on state
+    const currentImageUrl = usedDirectUrl ? imageMain : cachedImageUrl;
 
     return (
       <div 
@@ -61,9 +80,9 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
         <div className="product-card-body">
           {/* Image Container with fixed dimensions */}
           <div className="product-card-image-container">
-            {!imageError ? (
+            {!imageError && currentImageUrl ? (
               <Image
-                src={cachedImageUrl} // Use cached image URL
+                src={currentImageUrl}
                 alt={name}
                 width={120}
                 height={180}
@@ -71,26 +90,15 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
                 sizes="(max-width: 768px) 120px, 120px"
                 priority={false}
                 loading="lazy"
-                onError={() => {
-                  // Mark this image as a placeholder in our global cache
-                  ImageCache.markAsPlaceholder(imageMain);
-                  setImageError(true);
-                }}
-                onLoad={() => {
-                  // Record successful load in our cache
-                  ImageCache.markAsLoaded(imageMain);
-                }}
+                onError={handleImageError}
               />
             ) : (
-              // Use static placeholder for failed images - this is a LOCAL file, not from vinmonopolet.no
-              <Image
-                src="/bottle-placeholder.png"
-                alt="Product image placeholder"
-                width={120}
-                height={180}
-                className="product-card-image opacity-60"
-                sizes="(max-width: 768px) 120px, 120px"
-              />
+              // Use static placeholder for failed images
+              <div className="flex items-center justify-center w-full h-full bg-gray-100">
+                <div className="text-gray-400 text-sm text-center p-2">
+                  {imageError ? "No image available" : "Loading..."}
+                </div>
+              </div>
             )}
           </div>
 

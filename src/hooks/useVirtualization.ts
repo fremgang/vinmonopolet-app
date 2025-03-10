@@ -1,25 +1,12 @@
 // src/hooks/useVirtualization.ts
 import { useState, useEffect, useCallback } from 'react';
-
-interface UseVirtualizationOptions<T> {
-  items: T[];
-  itemHeight?: number;
-  overscan?: number;
-}
-
-interface VirtualItem {
-  index: number;
-  start: number;
-  end: number;
-  size: number;
-  visible: boolean;
-}
+import { VirtualizationOptions, VirtualItem } from '@/types';
 
 export function useVirtualization<T>({
   items,
   itemHeight = 350, // Default height in pixels
   overscan = 5 // Number of items to render before and after visible items
-}: UseVirtualizationOptions<T>) {
+}: VirtualizationOptions<T>) {
   const [visibleWindow, setVisibleWindow] = useState({ start: 0, end: 30 });
   const [scrollPosition, setScrollPosition] = useState(0);
 

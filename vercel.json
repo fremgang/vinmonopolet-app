@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npx prisma generate --no-engine && npx next build",
+  "buildCommand": "npm run prebuild && npx prisma generate --no-engine && npx next build",
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["fra1"],

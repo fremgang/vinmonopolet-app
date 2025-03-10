@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node build-fix.cjs",
     "build": "prisma generate --no-engine && next build",
     "start": "next start",
     "lint": "next lint",

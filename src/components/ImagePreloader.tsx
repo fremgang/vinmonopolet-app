@@ -1,6 +1,6 @@
 // src/components/ImagePreloader.tsx
 import React, { useEffect } from 'react';
-import type { Product } from '@/app/page';
+import { Product } from '@/types';
 import ImageCache from '@/utils/imageCache';
 
 interface ImagePreloaderProps {

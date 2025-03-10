@@ -18,8 +18,18 @@ import ProductDetailsModal from '@/components/product/ProductDetailsModal';
 import SplashScreen from '@/components/layout/SplashScreen';
 import ProductGrid from '@/components/product/ProductGrid';
 
-// Debug component
-function DebugStateMonitor({ products, loadingState, setLoadingState, initialLoading, setInitialLoading, showSplashScreen }) {
+// Import types
+import { Product, LoadingState, DebugStateMonitorProps } from '@/types';
+
+// Debug component with explicit typing
+function DebugStateMonitor({ 
+  products, 
+  loadingState, 
+  setLoadingState, 
+  initialLoading, 
+  setInitialLoading, 
+  showSplashScreen 
+}: DebugStateMonitorProps) {
   useEffect(() => {
     if (showSplashScreen) return;
     
@@ -41,7 +51,7 @@ export default function Home() {
   // View state
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   
   // Products and loading state from custom hook
@@ -109,9 +119,8 @@ export default function Home() {
       <DebugStateMonitor
         products={products}
         loadingState={loadingState}
-        setLoadingState={(state) => {
+        setLoadingState={(state: LoadingState) => {
           // This is a simplified version for the example
-          // Ideally you'd expose this setter from the hook
           console.log(`Setting loading state to ${state}`);
         }}
         initialLoading={initialLoading}

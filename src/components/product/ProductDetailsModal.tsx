@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, Button, Tag } from '@geist-ui/core';
 import { X, ShoppingBag, Globe, MapPin, Wine } from 'lucide-react';
 import Image from 'next/image';
-import { Product } from '@/app/page';
+import { Product } from '@/types';
 
 interface ProductModalProps {
   product: Product | null;
@@ -18,6 +18,10 @@ export default function ProductDetailsModal({ product, visible, onClose }: Produ
     if (price === null) return 'N/A';
     return new Intl.NumberFormat('no-NO', { style: 'currency', currency: 'NOK' }).format(price);
   };
+
+  function getCachedImageUrl(imageMain: string): string | import("next/dist/shared/lib/get-img-props").StaticImport {
+    throw new Error('Function not implemented.');
+  }
 
   return (
     <Modal visible={visible} onClose={onClose} width="42rem">
@@ -40,16 +44,16 @@ export default function ProductDetailsModal({ product, visible, onClose }: Produ
       
       <Modal.Content>
         <div className="flex flex-col md:flex-row gap-6">
-          {/* Product Image */}
+          
           <div className="w-full md:w-2/5">
             <div className="aspect-[4/3] relative bg-gray-50 rounded-lg overflow-hidden">
-              <Image
-                src={product.imageMain}
-                alt={product.name}
-                fill
-                className="object-contain p-4"
-                sizes="(max-width: 640px) 100vw, 33vw"
-              />
+            <Image
+            src={getCachedImageUrl(product.imageMain)}
+            alt={product.name}
+            fill
+            className="object-contain p-4"
+            sizes="(max-width: 640px) 100vw, 33vw"
+            />
             </div>
           </div>
           

@@ -124,13 +124,14 @@ export type Product = {
     onProductsLoaded?: (products: Product[]) => void;
   };
   
-  /**
-   * Debug state monitor props
-   * Props for the debug state monitoring component
-   */
-  export type DebugStateMonitorProps = {
+/**
+ * Debug state monitor props
+ * Props for the debug state monitoring component
+ */
+export type DebugStateMonitorProps = {
     products: Product[];
-    loading: boolean;
+    // Remove the loading prop which isn't being passed
+    // loading: boolean;  
     initialLoading: boolean;
     loadingState: LoadingState;
     setLoadingState: (state: LoadingState) => void;

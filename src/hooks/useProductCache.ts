@@ -1,22 +1,11 @@
 // src/hooks/useProductCache.ts - Improved version with better caching
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { Product } from '@/app/page';
+import { Product, ProductResponse } from '@/types';
 
 interface CacheState {
   products: { [key: string]: Product[] };
   metadata: { [key: string]: any };
   lastUpdated: number;
-}
-
-interface ProductResponse {
-  products: Product[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    pages: number;
-    hasMore: boolean;
-  };
 }
 
 // Number of products to prefetch ahead of current view

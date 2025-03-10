@@ -1,52 +1,7 @@
 // src/hooks/useProducts.ts
 import { useState, useCallback, useEffect, useRef } from 'react';
 import useProductCache from './useProductCache'; // Your existing cache hook
-
-export type Product = {
-  product_id: string;
-  name: string;
-  category: string | null;
-  country: string | null;
-  price: number | null;
-  district: string | null;
-  sub_district: string | null;
-  producer: string | null;
-  varetype: string | null;
-  lukt: string | null;
-  smak: string | null;
-  farge: string | null;
-  metode: string | null;
-  inneholder: string | null;
-  emballasjetype: string | null;
-  korktype: string | null;
-  utvalg: string | null;
-  grossist: string | null;
-  transportor: string | null;
-  imageSmall: string;
-  imageMain: string;
-};
-
-export type PaginationInfo = {
-  total: number;
-  page: number;
-  limit: number;
-  pages: number;
-  hasMore: boolean;
-};
-
-export type ProductFilters = {
-  search: string;
-  countries: string[];
-  categories: string[];
-  priceRange: [number, number];
-};
-
-export type ProductSort = {
-  field: 'name' | 'price' | 'country' | 'category';
-  order: 'asc' | 'desc';
-};
-
-type LoadingState = 'loading' | 'loaded';
+import { Product, PaginationInfo, ProductFilters, ProductSort, LoadingState } from '@/types';
 
 export function useProducts() {
   // Product data state
@@ -115,8 +70,12 @@ export function useProducts() {
   }, []);
   
   // Parse sort string (e.g., "price:desc")
-  const handleSortChange = useCallback((sortString: string) => {
-    const [field, order] = sortString.split(':') as [ProductSort['field'], ProductSort['order']];
+  const handleSortChange = useCallback((sortString: string | string[]) => {
+    // Since we're working with single-select, we can safely assume it's a string
+    // But handle array case for type safety
+    const value = Array.isArray(sortString) ? sortString[0] : sortString;
+    
+    const [field, order] = value.split(':') as [ProductSort['field'], ProductSort['order']];
     updateSort({ field, order });
   }, [updateSort]);
   
@@ -326,6 +285,7 @@ export function useProducts() {
     loaderRef,
     
     // Utility methods
+    setInitialLoading,
     setInitialDataLoaded,
     ensureLoadedState
   };

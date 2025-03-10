@@ -2,7 +2,7 @@
 
 'use client';
 import React, { createContext, useContext, useState } from 'react';
-import type { Product } from '@/app/page';
+import { Product } from '@/types';
 
 // Define context types
 type ProductStreamContextType = {
