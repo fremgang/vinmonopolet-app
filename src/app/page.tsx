@@ -14,6 +14,77 @@ import useProductCache from '@/hooks/useProductCache';
 import ImagePreloader from '@/components/ImagePreloader';
 import React from 'react';
 
+interface DebugStateMonitorProps {
+  products: Product[];
+  loading: boolean;
+  initialLoading: boolean;
+  productTransitionState: 'loading' | 'loaded';
+  setProductTransitionState: (state: 'loading' | 'loaded') => void;
+  setInitialLoading: (loading: boolean) => void;
+  showSplashScreen: boolean;
+}
+
+function DebugStateMonitor({
+  products,
+  loading,
+  initialLoading,
+  productTransitionState,
+  setProductTransitionState,
+  setInitialLoading,
+  showSplashScreen
+}: DebugStateMonitorProps) {
+  // Monitor for invalid loading states and fix them
+  useEffect(() => {
+    
+    // Only monitor when splash screen is gone
+    if (showSplashScreen) return;
+    
+    // If we have products but still in loading state, fix it
+    if (products.length > 0 && productTransitionState === 'loading') {
+      console.warn('Invalid state detected: Products loaded but still in loading state');
+      
+      // Schedule a fix
+      setTimeout(() => {
+        console.log('Fixing product state: forcing transition to loaded');
+        setProductTransitionState('loaded');
+      }, 100);
+    }
+    
+    // If we have products but still in initialLoading state, fix it
+    if (products.length > 0 && initialLoading) {
+      console.warn('Invalid state detected: Products loaded but still in initialLoading state');
+      
+      // Schedule a fix
+      setTimeout(() => {
+        console.log('Fixing initial loading state: setting to false');
+        setInitialLoading(false);
+      }, 100);
+    }
+    
+    // If we're not loading but transition state is still loading, fix it
+    if (!loading && !initialLoading && productTransitionState === 'loading') {
+      console.warn('Invalid state detected: Not loading but transition state is still loading');
+      
+      // Schedule a fix
+      setTimeout(() => {
+        console.log('Fixing transition state: setting to loaded');
+        setProductTransitionState('loaded');
+      }, 100);
+    }
+  }, [
+    products.length, 
+    loading, 
+    initialLoading, 
+    productTransitionState, 
+    setProductTransitionState, 
+    setInitialLoading,
+    showSplashScreen
+  ]);
+  
+  // Return null - this is a utility component
+  return null;
+}
+
 export interface Product {
   product_id: string;
   name: string;
@@ -106,58 +177,231 @@ export default function Home() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loaderRef = useRef<HTMLDivElement | null>(null);
   
-// Updated preloadData function - remove CSS preloading
-const preloadData = useCallback(async () => {
-  try {
-    // Start fetching random data during splash screen
-    const queryParams = new URLSearchParams({
-      random: 'true',
-      limit: '50'
-    });
-    
-    // Prefetch random products (will be cached)
-    const response = await fetch(`/api/products?${queryParams.toString()}`);
-    
-    if (response.ok) {
-      const data = await response.json();
-      // Store the preloaded data to use when splash screen ends
-      setProducts(data.products);
-      setPagination(data.pagination);
-      setHasMore(data.pagination.hasMore);
+  // Function to ensure products are shown as loaded
+  const ensureLoadedState = useCallback(() => {
+    if (products.length > 0 && productTransitionState === 'loading') {
+      console.log('Products available but in loading state, forcing transition');
+      setProductTransitionState('loaded');
       
-      // Start loading product images
-      const imagePromises = data.products.slice(0, 9).map((product: { imageMain: any; }) => {
-        return new Promise((resolve) => {
-          const img = new window.Image();
-          img.onload = resolve;
-          img.onerror = resolve; // Still resolve on error to not block
-          img.src = product.imageMain;
-        });
+      // Also ensure initialLoading is false when we have products
+      if (initialLoading) {
+        setInitialLoading(false);
+      }
+    }
+  }, [products.length, productTransitionState, initialLoading, setInitialLoading, setProductTransitionState]);
+  
+  // Preload data during splash screen
+  const preloadData = useCallback(async () => {
+    try {
+      console.log('Starting preload during splash screen');
+      
+      // Start fetching random data during splash screen
+      const queryParams = new URLSearchParams({
+        random: 'true',
+        limit: '50'
       });
       
-      // Wait for the first few images to load
-      await Promise.allSettled(imagePromises);
+      // Prefetch random products (will be cached)
+      const response = await fetch(`/api/products?${queryParams.toString()}`, {
+        // Add cache: 'no-store' to ensure fresh data
+        cache: 'no-store'
+      });
       
-      // Set product transition state to loaded
-      setTimeout(() => {
+      if (response.ok) {
+        const data = await response.json();
+        
+        console.log(`Preloaded ${data.products.length} products during splash screen`);
+        
+        // Store the preloaded data
+        setProducts(data.products);
+        setPagination(data.pagination);
+        setHasMore(data.pagination.hasMore);
+        
+        // Prepare the loading state for smooth transition
         setProductTransitionState('loaded');
-      }, 100);
+        setInitialLoading(false);
+        
+        // Start loading product images
+        const imagePromises = data.products.slice(0, 9).map((product: { imageMain: any; }) => {
+          return new Promise((resolve) => {
+            const img = new window.Image();
+            img.onload = resolve;
+            img.onerror = resolve; // Still resolve on error to not block
+            img.src = product.imageMain;
+          });
+        });
+        
+        // Wait for the first few images to load
+        await Promise.allSettled(imagePromises);
+        
+        console.log('Preload completed successfully');
+        return true;
+      } else {
+        console.error('Failed to preload: API response not ok');
+        return false;
+      }
+    } catch (err) {
+      console.error('Error during preload:', err);
+      return false;
     }
-  } catch (err) {
-    console.error('Error during preload:', err);
-  }
-}, []);
+  }, [setProducts, setPagination, setHasMore, setProductTransitionState, setInitialLoading]);
+
+    // Function to fetch random products
+    const fetchRandomProducts = useCallback(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Set loading state first
+        setProductTransitionState('loading');
+        
+        // Build query parameters for random products
+        const queryParams = new URLSearchParams({
+          random: 'true',
+          limit: '50'
+        });
+        
+        // Fetch random products
+        const response = await fetch(`/api/products?${queryParams.toString()}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch random products: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // Update products list
+        setProducts(data.products);
+        setPagination(data.pagination);
+        setHasMore(data.pagination.hasMore);
+        
+        // After a short delay, transition to the loaded state
+        setTimeout(() => {
+          setProductTransitionState('loaded');
+        }, 300);
+        
+      } catch (err) {
+        console.error('Error loading random products:', err);
+        setError('Failed to load random products. Please try again.');
+      } finally {
+        setLoading(false);
+        setInitialLoading(false);
+      }
+    }, []);
   
-  // Hide splash screen after timeout
+    // Main fetch function using the cache
+    const loadProducts = useCallback(async (pageNum: number, reset = false) => {
+      if (loading) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Set loading state first
+        setProductTransitionState('loading');
+        
+        // Check if sorting by price - if so, ensure UI shows we're excluding N/A prices
+        if (sortBy === 'price') {
+          console.log('Filtering out products with N/A prices for price sort');
+        }
+        
+        // Fetch products using the cache
+        const result = await fetchProducts(
+          pageNum,
+          debouncedSearch,
+          sortBy,
+          sortOrder,
+          filters
+        );
+        
+        // Update pagination info
+        setPagination(result.pagination);
+        setHasMore(result.pagination.hasMore);
+        
+        // Update products list - either replace or append
+        setProducts(prev => {
+          const newProducts = reset ? result.products : [...prev, ...result.products];
+          
+          // After a short delay, transition to the loaded state
+          // This gives time for images to load and creates a smoother transition
+          setTimeout(() => {
+            setProductTransitionState('loaded');
+          }, 300);
+          
+          return newProducts;
+        });
+        
+        // After we load the current page, prefetch the next page
+        if (result.pagination.hasMore) {
+          prefetchProducts(
+            pageNum + 1,
+            debouncedSearch,
+            sortBy,
+            sortOrder,
+            filters
+          );
+        }
+      } catch (err) {
+        if (err instanceof Error) {
+          console.error('Error loading products:', err);
+          setError(err.message || 'Failed to load products. Please try again.');
+        }
+      } finally {
+        setLoading(false);
+        setInitialLoading(false);
+      }
+    }, [debouncedSearch, sortBy, sortOrder, filters, loading, fetchProducts, prefetchProducts]);
+  
+  // Hide splash screen after timeout with improved handoff
   useEffect(() => {
+    let preloadedProducts = false;
+    
+    // Function to capture the preloaded state before unmounting splash
+    const capturePreloadState = () => {
+      preloadedProducts = products.length > 0;
+      console.log(`Capturing preload state: ${preloadedProducts ? products.length : 0} products loaded`);
+    };
+    
     const timer = setTimeout(() => {
+      // Capture the state of preloaded data
+      capturePreloadState();
+      
+      // Hide splash screen
       setShowSplashScreen(false);
-      setInitialDataLoaded(true); // Mark data as loaded after splash screen
-      setProductTransitionState('loaded'); // Show products right away
-    }, 5000); // 5 seconds for better cold start experience
+      
+      // Immediately schedule initialization tasks
+      setTimeout(() => {
+        console.log('Initializing app after splash screen');
+        
+        // Mark initial data as loaded
+        setInitialDataLoaded(true);
+        
+        // If we have preloaded products, make sure they're shown
+        if (preloadedProducts) {
+          console.log('Using preloaded products');
+          setInitialLoading(false);
+          setProductTransitionState('loaded');
+        } else {
+          // Otherwise do a fresh load
+          console.log('No preloaded products, loading fresh data');
+          const shouldUseRandom = 
+            !debouncedSearch && 
+            !filters.countries.length && 
+            !filters.categories.length && 
+            filters.priceRange[0] === 0 && 
+            filters.priceRange[1] === 100000;
+            
+          if (shouldUseRandom) {
+            fetchRandomProducts();
+          } else {
+            loadProducts(1, true);
+          }
+        }
+      }, 50); // Small delay to ensure DOM is updated
+    }, 5000); // Full 5 seconds
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [products.length, debouncedSearch, filters, fetchRandomProducts, loadProducts]);
   
   // Debounce search input
   useEffect(() => {
@@ -179,111 +423,20 @@ const preloadData = useCallback(async () => {
     }
   }, [debouncedSearch, sortBy, sortOrder, filters, initialDataLoaded]);
 
-  // Function to fetch random products
-  const fetchRandomProducts = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Periodically check for loaded state
+  useEffect(() => {
+    if (!showSplashScreen && initialDataLoaded) {
+      // Immediately try to ensure loaded state
+      ensureLoadedState();
       
-      // Set loading state first
-      setProductTransitionState('loading');
+      // Also set a backup timer to check again
+      const timer = setTimeout(() => {
+        ensureLoadedState();
+      }, 1000); // Check again after 1 second
       
-      // Build query parameters for random products
-      const queryParams = new URLSearchParams({
-        random: 'true',
-        limit: '50'
-      });
-      
-      // Fetch random products
-      const response = await fetch(`/api/products?${queryParams.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch random products: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      // Update products list
-      setProducts(data.products);
-      setPagination(data.pagination);
-      setHasMore(data.pagination.hasMore);
-      
-      // After a short delay, transition to the loaded state
-      setTimeout(() => {
-        setProductTransitionState('loaded');
-      }, 300);
-      
-    } catch (err) {
-      console.error('Error loading random products:', err);
-      setError('Failed to load random products. Please try again.');
-    } finally {
-      setLoading(false);
-      setInitialLoading(false);
+      return () => clearTimeout(timer);
     }
-  }, []);
-
-  // Main fetch function using the cache
-  const loadProducts = useCallback(async (pageNum: number, reset = false) => {
-    if (loading) return;
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Set loading state first
-      setProductTransitionState('loading');
-      
-      // Check if sorting by price - if so, ensure UI shows we're excluding N/A prices
-      if (sortBy === 'price') {
-        console.log('Filtering out products with N/A prices for price sort');
-      }
-      
-      // Fetch products using the cache
-      const result = await fetchProducts(
-        pageNum,
-        debouncedSearch,
-        sortBy,
-        sortOrder,
-        filters
-      );
-      
-      // Update pagination info
-      setPagination(result.pagination);
-      setHasMore(result.pagination.hasMore);
-      
-      // Update products list - either replace or append
-      setProducts(prev => {
-        const newProducts = reset ? result.products : [...prev, ...result.products];
-        
-        // After a short delay, transition to the loaded state
-        // This gives time for images to load and creates a smoother transition
-        setTimeout(() => {
-          setProductTransitionState('loaded');
-        }, 300);
-        
-        return newProducts;
-      });
-      
-      // After we load the current page, prefetch the next page
-      if (result.pagination.hasMore) {
-        prefetchProducts(
-          pageNum + 1,
-          debouncedSearch,
-          sortBy,
-          sortOrder,
-          filters
-        );
-      }
-    } catch (err) {
-      if (err instanceof Error) {
-        console.error('Error loading products:', err);
-        setError(err.message || 'Failed to load products. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-      setInitialLoading(false);
-    }
-  }, [debouncedSearch, sortBy, sortOrder, filters, loading, fetchProducts, prefetchProducts]);
+  }, [showSplashScreen, initialDataLoaded, ensureLoadedState]);
 
   // Initial data fetch - fixed to avoid issues with sorting and randomization
   useEffect(() => {
@@ -341,15 +494,29 @@ const preloadData = useCallback(async () => {
     });
   }, []);
 
-  // Set up intersection observer for infinite scroll
+  // Improved intersection observer for infinite scroll
   useEffect(() => {
+    // Don't set up observer until splash screen is gone and initial data is loaded
+    if (showSplashScreen || !initialDataLoaded) {
+      return;
+    }
+
     if (!loaderRef.current) return;
     
     const currentLoaderRef = loaderRef.current;
     
+    // Cleanup any existing observer before creating a new one
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+    
+    console.log('Setting up intersection observer');
+    
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading) {
+          console.log('Loader element intersected, loading more products');
           loadMoreProducts();
         }
       },
@@ -360,11 +527,12 @@ const preloadData = useCallback(async () => {
     observerRef.current = observer;
     
     return () => {
+      console.log('Cleaning up intersection observer');
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
     };
-  }, [hasMore, loading, loadMoreProducts]);
+  }, [hasMore, loading, loadMoreProducts, showSplashScreen, initialDataLoaded]);
 
   // Handle scrolling for virtualized list
   useEffect(() => {
@@ -470,13 +638,29 @@ const preloadData = useCallback(async () => {
     loadProducts(1, true);
   };
 
-  // Render splash screen if showing
-  if (showSplashScreen) {
-    return <SplashScreen onPreload={preloadData} />;
-  }
+  // Create a wrapper function that adapts the return type
+const preloadWrapper = useCallback(async () => {
+  await preloadData();
+  // No explicit return makes this return void
+}, [preloadData]);
+
+if (showSplashScreen) {
+  return <SplashScreen onPreload={preloadWrapper} />;
+}
 
   return (
     <div className="max-w-7xl mx-auto px-4">
+      {/* Debug State Monitor to fix loading states */}
+      <DebugStateMonitor
+        products={products}
+        loading={loading}
+        initialLoading={initialLoading}
+        productTransitionState={productTransitionState}
+        setProductTransitionState={setProductTransitionState}
+        setInitialLoading={setInitialLoading}
+        showSplashScreen={showSplashScreen}
+      />
+      
       {/* Search and Filter Controls */}
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-6">
         <div className="relative w-full md:w-96">
@@ -628,54 +812,55 @@ const preloadData = useCallback(async () => {
       {viewMode === 'grid' ? (
         // Grid View with improved skeleton loading and virtualization
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {initialLoading && (
+          {initialLoading && products.length === 0 ? (
             // Show skeleton cards during initial loading
             <React.Fragment>
               {SkeletonArray}
             </React.Fragment>
-          )}
-          
-          {!initialLoading && products.map((product, index) => {
-            // Create placeholder divs for items outside visible window to maintain scroll height
-            if (index < visibleWindow.start || index > visibleWindow.end) {
+          ) : (
+            // Products content with virtualization
+            products.map((product, index) => {
+              // Create placeholder divs for items outside visible window to maintain scroll height
+              if (index < visibleWindow.start || index > visibleWindow.end) {
+                return (
+                  <div 
+                    key={product.product_id}
+                    className="h-[350px]" // Approximate height of a card
+                  />
+                );
+              }
+              
+              // Check if product is at the edge of our window - if so, render skeleton
+              const isEdgeItem = (index >= visibleWindow.end - 9 && index <= visibleWindow.end) || 
+                                (index >= visibleWindow.start && index <= visibleWindow.start + 9);
+                                
+              if (isEdgeItem && productTransitionState === 'loading') {
+                return (
+                  <div key={`skeleton-edge-${index}`} className="h-full">
+                    <SkeletonProductCard />
+                  </div>
+                );
+              }
+              
+              // Render normal product
               return (
                 <div 
                   key={product.product_id}
-                  className="h-[350px]" // Approximate height of a card
-                />
-              );
-            }
-            
-            // Check if product is at the edge of our window - if so, render skeleton
-            const isEdgeItem = (index >= visibleWindow.end - 9 && index <= visibleWindow.end) || 
-                               (index >= visibleWindow.start && index <= visibleWindow.start + 9);
-                              
-            if (isEdgeItem && productTransitionState === 'loading') {
-              return (
-                <div key={`skeleton-edge-${index}`} className="h-full">
-                  <SkeletonProductCard />
+                  className={`h-full transition-opacity duration-300 ${
+                    productTransitionState === 'loaded' ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  <ProductCard 
+                    product={product}
+                    onClick={() => {
+                      setSelectedProduct(product);
+                      setModalOpen(true);
+                    }}
+                  />
                 </div>
               );
-            }
-            
-            // Render normal product
-            return (
-              <div 
-                key={product.product_id}
-                className={`h-full transition-opacity duration-300 ${
-                  productTransitionState === 'loaded' ? 'opacity-100' : 'opacity-0'
-                }`}
-              >
-                <ProductCard 
-                  product={product}
-                  onClick={() => {
-                    setSelectedProduct(product);
-                    setModalOpen(true);
-                  }}
-                />
-              </div>
-            );
-          })}
+            })
+          )}
           
           {/* Show skeleton cards at the end during "load more" */}
           {loading && !initialLoading && hasMore && (
@@ -701,7 +886,7 @@ const preloadData = useCallback(async () => {
               </tr>
             </thead>
             <tbody>
-              {initialLoading ? (
+              {initialLoading && products.length === 0 ? (
                 // Show skeleton rows during initial loading
                 Array(5).fill(0).map((_, i) => (
                   <tr key={`skeleton-list-${i}`} className="border-b border-neutral-100">
@@ -747,11 +932,10 @@ const preloadData = useCallback(async () => {
                       <td className="p-4">
                         <div className="w-10 h-14 relative">
                           <Image 
-                            src={product.imageSmall} 
+                            src={`/api/image-cache?url=${encodeURIComponent(product.imageSmall)}`}
                             alt={product.name}
                             fill
                             className="object-contain"
-                            unoptimized={product.imageSmall.includes('vinmonopolet.no')}
                           />
                         </div>
                       </td>

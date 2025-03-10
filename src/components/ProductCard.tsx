@@ -1,4 +1,4 @@
-// src/components/ProductCard.tsx
+// src/components/ProductCard.tsx - Updated with image caching
 import React, { useState, useEffect, forwardRef } from 'react';
 import Image from 'next/image';
 import { Product } from '@/app/page';
@@ -9,7 +9,12 @@ interface ProductCardProps {
   onClick?: () => void;
 }
 
-// Implement forwardRef correctly
+// Helper function to get cached image URL
+const getCachedImageUrl = (originalUrl: string) => {
+  // Use our API route to serve cached images
+  return `/api/image-cache?url=${encodeURIComponent(originalUrl)}`;
+};
+
 const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
   ({ product, onClick }, ref) => {
     const {
@@ -30,6 +35,9 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
       ImageCache.isPlaceholder(imageMain)
     );
     
+    // Get cached image URL
+    const cachedImageUrl = getCachedImageUrl(imageMain);
+    
     // Function to format price with Norwegian format
     const formatPrice = (price: number | null) => {
       if (price === null) return 'N/A';
@@ -42,7 +50,7 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
         onClick={onClick}
         role="button"
         tabIndex={0}
-        ref={ref} // Pass the ref to the DOM element
+        ref={ref}
       >
         {/* Card Header with Centered Product Name */}
         <div className="product-card-header">
@@ -55,7 +63,7 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
           <div className="product-card-image-container">
             {!imageError ? (
               <Image
-                src={imageMain}
+                src={cachedImageUrl} // Use cached image URL
                 alt={name}
                 width={120}
                 height={180}
