@@ -1,207 +1,396 @@
+/* src/app/globals.css - Comprehensive Styling */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+/* Root CSS Variables */
+:root {
+  /* Primary palette - wine theme */
+  --wine-red: #8c1c13;     /* Primary brand color */
+  --wine-red-light: #b32c1b; /* Lighter shade for hover */
+  --wine-dark: #2c1217;    /* Deep shade for header */
+  --wine-accent: #d14f4a;  /* Accent color for highlights */
+  
+  /* Neutral palette - warm grays */
+  --neutral-50: #fafaf9;
+  --neutral-100: #f5f5f4;
+  --neutral-200: #e7e5e4;
+  --neutral-300: #d6d3d1;
+  --neutral-400: #a8a29e;
+  --neutral-500: #78716c;
+  --neutral-600: #57534e;
+  --neutral-700: #44403c;
+  --neutral-800: #292524;
+  --neutral-900: #1c1917;
+  
+  /* Support palette */
+  --cream: #f9f7f2;        /* Background color */
+  --amber: #d97706;        /* Complementary for categories */
+  --forest: #365314;       /* Complementary for filters/tags */
+  
+  /* Typography Scale */
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-base: 1rem;    /* 16px */
+  --font-size-lg: 1.125rem;  /* 18px */
+  --font-size-xl: 1.25rem;   /* 20px */
+  --font-size-2xl: 1.5rem;   /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem;  /* 36px */
+  
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Spacing Scale */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px */
+  --space-5: 1.25rem;  /* 20px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+  --space-10: 2.5rem;  /* 40px */
+  --space-12: 3rem;    /* 48px */
+  --space-16: 4rem;    /* 64px */
+  
+  /* Border Radius */
+  --radius-sm: 0.125rem;  /* 2px */
+  --radius: 0.375rem;     /* 6px */
+  --radius-md: 0.5rem;    /* 8px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 1rem;      /* 16px */
+  --radius-full: 9999px;  /* Round */
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  /* Animation Timing */
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 350ms;
+  
+  /* z-index layers */
+  --z-header: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+  --z-tooltip: 70;
+  
+  /* Container Widths */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+  --container-2xl: 1536px;
+  
+  /* Shadcn UI theme */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 346 84% 31%;
-    --primary-foreground: 210 40% 98%;
+  --primary: 346 84% 31%;
+  --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
 
-    --radius: 0.5rem;
+  --radius: 0.5rem;
+}
 
-    /* Custom CSS Variables for Theme Colors */
-    --header-bg: #2c1217;
-    --header-text: #ffffff;
-    
-    /* Warm neutral palette */
-    --neutral-50: #fafaf9;
-    --neutral-100: #f5f5f4;
-    --neutral-200: #e7e5e4;
-    --neutral-300: #d6d3d1;
-    --neutral-400: #a8a29e;
-    --neutral-500: #78716c;
-    --neutral-600: #57534e;
-    --neutral-700: #44403c;
-    --neutral-800: #292524;
-    --neutral-900: #1c1917;
-    
-    /* Rich accent colors */
-    --wine-red: #8c1c13;
-    --wine-red-light: #b32c1b;
-    --amber: #d97706;
-    --forest: #365314;
-    
-    /* Card and container styles */
-    --card-bg: #ffffff;
-    --card-border: #e7e5e4;
-    --card-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    --card-hover-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    
-    /* Background */
-    --bg-color: #f5f5f4;
-    --cream: #f9f7f2;
-  }
+/* Dark mode overrides */
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+  --primary: 346 50% 30%;
+  --primary-foreground: 222.2 47.4% 11.2%;
 
-    --primary: 346 50% 30%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-  }
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 212.7 26.8% 83.9%;
+  
+  --cream: #1c1917;
+  --wine-red: #d14f4a;
+  --wine-red-light: #e17973;
+  --wine-dark: #3d1b21;
+  --neutral-800: #f5f5f4;
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+  
+  html {
+    font-family: var(--font-montserrat), system-ui, sans-serif;
+    scroll-behavior: smooth;
+  }
+  
   body {
     @apply bg-background text-foreground;
-    background-color: var(--bg-color);
+    background-color: var(--cream);
+    font-family: var(--font-montserrat), system-ui, sans-serif;
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    color: var(--neutral-800);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+  
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif tracking-tight;
+    font-family: var(--font-playfair), serif;
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-tight);
+    letter-spacing: -0.01em;
   }
+  
+  h1 {
+    font-size: var(--font-size-4xl);
+  }
+  
+  h2 {
+    font-size: var(--font-size-3xl);
+  }
+  
+  h3 {
+    font-size: var(--font-size-2xl);
+  }
+  
+  h4 {
+    font-size: var(--font-size-xl);
+  }
+  
+  h5 {
+    font-size: var(--font-size-lg);
+  }
+  
+  h6 {
+    font-size: var(--font-size-base);
+  }
+  
+  a {
+    color: var(--wine-red);
+    text-decoration: none;
+    transition: color var(--transition-fast) ease;
+  }
+  
+  a:hover {
+    color: var(--wine-red-light);
+  }
+}
+
+/* Layout components */
+.container {
+  width: 100%;
+  max-width: var(--container-xl);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.section {
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-8);
 }
 
 /* Header styling */
 header {
-  background-color: var(--header-bg) !important;
+  background-color: var(--wine-dark) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 header a, header svg {
-  color: var(--header-text) !important;
-}
-/* Ensure product image containers have white background */
-.product-card-image-container {
-  width: 40%; /* Larger image container */
-  min-height: 200px;
-  position: relative;
-  background-color: #fff !important; /* Force white background */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #f0f0f0;
-  border-radius: 0.25rem;
+  color: var(--neutral-50) !important;
 }
 
-/* For Shadcn cards, ensure image backgrounds are white */
-.product-image-wrapper {
-  background-color: white !important;
-  border: 1px solid #FFFFFF; /* Slightly darker border */
-  border-radius: 0.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.header-shadow {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* For dark mode, still keep image backgrounds white */
-.dark .product-card-image-container,
-.dark .product-image-wrapper {
-  background-color: white !important;
-  border-color: #333333;
+/* Main layout padding for fixed header */
+main {
+  padding-top: 5rem;
 }
 
-.card .image-container {
-  background-color: white !important;
-  border: 1px solid #e5e5e5;
-  border-radius: 0.25rem;
-  padding: 0.5rem;
+/* Custom button styles */
+.btn-wine {
+  background-color: var(--wine-red);
+  color: white;
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-fast) ease;
 }
 
-/* Product card improvements */
+.btn-wine:hover {
+  background-color: var(--wine-red-light);
+}
+
+.btn-wine-outline {
+  background-color: transparent;
+  color: var(--wine-red);
+  border: 1px solid var(--wine-red);
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-fast) ease;
+}
+
+.btn-wine-outline:hover {
+  background-color: var(--wine-red);
+  color: white;
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(1rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Animation classes */
+.animate-fade-in {
+  animation: fadeIn var(--transition-normal) ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp var(--transition-normal) ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Product card styling */
 .product-card {
   display: flex;
   flex-direction: column;
   height: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  background-color: var(--card-bg);
-  border: 1px solid var(--card-border);
-  box-shadow: var(--card-shadow);
-  transition: all 0.2s ease-in-out;
+  background-color: white;
+  border: 1px solid var(--neutral-200);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal) ease;
 }
 
 .product-card:hover {
-  box-shadow: var(--card-hover-shadow);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
 .product-card-header {
-  padding: 1rem;
-  /* Remove the border-bottom */
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--neutral-100);
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 5rem; /* Fixed height for consistent alignment */
+  min-height: 4rem;
 }
 
 .product-card-title {
-  font-family: var(--font-playfair);
-  font-size: 1.25rem;
+  font-family: var(--font-playfair), serif;
+  font-size: var(--font-size-lg);
   line-height: 1.3;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--neutral-900);
   margin: 0;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   text-overflow: ellipsis;
-  text-align: center; /* Center the text horizontally */
+  text-align: center;
 }
 
 .product-card-body {
   display: flex;
-  padding: 1rem;
+  padding: var(--space-4);
   flex: 1;
+}
+
+.product-card-image-container {
+  width: 40%;
+  min-height: 200px;
+  position: relative;
+  background-color: white !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--neutral-100);
+  border-radius: var(--radius);
 }
 
 .product-card-image {
@@ -212,28 +401,28 @@ header a, header svg {
 
 .product-card-content {
   width: 60%;
-  padding-left: 1rem;
+  padding-left: var(--space-4);
   display: flex;
   flex-direction: column;
 }
 
 .product-card-section {
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--space-3);
 }
 
 .product-card-section-title {
   text-transform: uppercase;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: 0.05em;
   color: var(--wine-red);
   margin-bottom: 0.25rem;
 }
 
 .product-card-section-content {
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   color: var(--neutral-700);
-  line-height: 1.4;
+  line-height: var(--line-height-normal);
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -241,9 +430,9 @@ header a, header svg {
 }
 
 .product-card-footer {
-  padding: 0.75rem 1rem;
+  padding: var(--space-3) var(--space-4);
   background-color: var(--neutral-50);
-  border-top: 1px solid var(--card-border);
+  border-top: 1px solid var(--neutral-200);
   margin-top: auto;
 }
 
@@ -256,13 +445,14 @@ header a, header svg {
 .product-card-info-line {
   display: flex;
   justify-content: space-between;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.product-card-category, .product-card-district {
+.product-card-category, 
+.product-card-district {
   color: var(--neutral-600);
   max-width: 60%;
   overflow: hidden;
@@ -275,76 +465,31 @@ header a, header svg {
 }
 
 .product-card-price {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
   color: var(--wine-red);
   margin-top: 0.25rem;
 }
 
 .product-card-producer {
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   color: var(--neutral-500);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Table-style list view */
-.product-table {
-  @apply w-full border-collapse text-sm;
-}
-
-.product-table-header {
-  @apply bg-neutral-50 text-left border-b border-neutral-200 sticky top-0 z-10;
-}
-
-.product-table-header th {
-  @apply px-4 py-3 font-semibold text-neutral-700;
-}
-
-.product-table-body tr {
-  @apply border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer transition-colors;
-}
-
-.product-table-body td {
-  @apply px-4 py-3 align-middle;
-}
-
-.product-image-cell {
-  @apply w-16;
-}
-
-.product-image {
-  @apply h-16 w-12 object-contain mx-auto;
-}
-
-.price-cell {
-  @apply font-bold text-wine-red;
-}
-
-/* Button Styles */
-.btn-primary {
-  @apply bg-wine-red text-white hover:bg-wine-red-light transition-colors px-4 py-2 rounded-md;
-}
-
-.btn-secondary {
-  @apply bg-neutral-100 text-neutral-800 hover:bg-neutral-200 transition-colors px-4 py-2 rounded-md;
-}
-
-.btn-outline {
-  @apply border border-wine-red text-wine-red hover:bg-neutral-50 transition-colors px-4 py-2 rounded-md;
-}
-
 /* Filter chips */
 .filter-chip {
   padding: 0.25rem 0.75rem;
-  font-size: 0.875rem;
-  border-radius: 9999px;
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-full);
   background-color: var(--neutral-100);
   color: var(--neutral-800);
   display: inline-flex;
   align-items: center;
-  transition: all 0.2s;
+  transition: all var(--transition-normal);
+  border: 1px solid transparent;
 }
 
 .filter-chip:hover {
@@ -358,25 +503,304 @@ header a, header svg {
 
 /* Badge styles */
 .badge {
-  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
 }
 
 .badge-availability {
-  @apply bg-neutral-100 text-neutral-700;
+  background-color: var(--neutral-100);
+  color: var(--neutral-700);
 }
 
-/* Responsive adjustments */
+.badge-category {
+  background-color: var(--amber);
+  color: white;
+}
+
+.badge-country {
+  background-color: var(--forest);
+  color: white;
+}
+
+/* Search and filter bar */
+.search-bar {
+  position: relative;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--neutral-300);
+  transition: all var(--transition-fast) ease;
+}
+
+.search-input:focus {
+  border-color: var(--wine-red);
+  box-shadow: 0 0 0 2px rgba(140, 28, 19, 0.2);
+  outline: none;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--neutral-500);
+}
+
+/* Skeleton loading animations */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--neutral-100) 25%,
+    var(--neutral-200) 37%,
+    var(--neutral-100) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.4s ease infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* Improved image containers */
+.product-image-wrapper {
+  background-color: white !important;
+  border: 1px solid var(--neutral-100);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  aspect-ratio: 3/4;
+}
+
+/* For dark mode, still keep image backgrounds white */
+.dark .product-card-image-container,
+.dark .product-image-wrapper {
+  background-color: white !important;
+  border-color: var(--neutral-700);
+}
+
+/* Splash screen styling */
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  background-color: var(--cream);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.splash-logo {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--wine-red);
+  margin-bottom: var(--space-6);
+  font-family: var(--font-playfair), serif;
+}
+
+.splash-progress {
+  width: 100%;
+  max-width: 300px;
+  height: 4px;
+  background-color: var(--neutral-200);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-top: var(--space-4);
+}
+
+.splash-progress-bar {
+  height: 100%;
+  background-color: var(--wine-red);
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+.wine-bottle-container {
+  width: 120px;
+  height: 180px;
+  position: relative;
+  margin-bottom: var(--space-8);
+}
+
+.wine-bottle {
+  width: 100%;
+  height: 100%;
+}
+
+.wine-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(to top, var(--wine-red), var(--wine-red-light));
+  transition: height 0.3s ease-out;
+}
+
+/* Mobile responsiveness */
 @media (max-width: 768px) {
-  .product-table-header .hide-mobile,
-  .product-table-body .hide-mobile {
-    @apply hidden;
+  h1 {
+    font-size: var(--font-size-3xl);
+  }
+  
+  h2 {
+    font-size: var(--font-size-2xl);
+  }
+  
+  h3 {
+    font-size: var(--font-size-xl);
   }
   
   .product-card-body {
     flex-direction: column;
   }
   
+  .product-card-image-container {
+    width: 100%;
+    margin-bottom: var(--space-4);
+  }
+  
   .product-card-content {
+    width: 100%;
     padding-left: 0;
   }
+  
+  .search-input {
+    padding: 0.5rem 1rem 0.5rem 2.25rem;
+  }
+  
+  .filter-panel-mobile {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: flex-end;
+  }
+  
+  .filter-panel-content {
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    background-color: white;
+    border-radius: 1rem 1rem 0 0;
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: var(--space-4);
+    animation: slide-up 0.3s ease-out;
+  }
+  
+  .mobile-hidden {
+    display: none;
+  }
+  
+  header {
+    padding: var(--space-2);
+  }
+}
+
+/* Additional responsive adjustments for tiny screens */
+@media (max-width: 480px) {
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  .product-card-header {
+    padding: var(--space-3);
+  }
+  
+  .product-card-body {
+    padding: var(--space-3);
+  }
+  
+  .product-card-footer {
+    padding: var(--space-2) var(--space-3);
+  }
+  
+  .filter-chip {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+}
+
+/* Table-style product list view */
+.product-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.product-table-header {
+  background-color: var(--neutral-50);
+  text-align: left;
+  border-bottom: 1px solid var(--neutral-200);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.product-table-header th {
+  padding: var(--space-3) var(--space-4);
+  font-weight: var(--font-weight-semibold);
+  color: var(--neutral-700);
+}
+
+.product-table-body tr {
+  border-bottom: 1px solid var(--neutral-100);
+  transition: background-color var(--transition-fast) ease;
+}
+
+.product-table-body tr:hover {
+  background-color: var(--neutral-50);
+  cursor: pointer;
+}
+
+.product-table-body td {
+  padding: var(--space-3) var(--space-4);
+  vertical-align: middle;
+}
+
+.product-image-cell {
+  width: 4rem;
+}
+
+.product-image {
+  height: 4rem;
+  width: 3rem;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+.price-cell {
+  font-weight: var(--font-weight-bold);
+  color: var(--wine-red);
+}
+
+/* Wine animation for splash screen */
+.wine-animation-container {
+  position: relative;
+  width: 100px;
+  height: 160px;
+  margin: 0 auto;
+}
+
+.wine-bottle-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
 }

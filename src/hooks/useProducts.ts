@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import useProductCache from './useProductCache'; // Your existing cache hook
 import { Product, PaginationInfo, ProductFilters, ProductSort, LoadingState } from '@/types';
+
 export function useProducts() {
   // Product data state
   const [products, setProducts] = useState<Product[]>([]);

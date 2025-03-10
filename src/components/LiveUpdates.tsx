@@ -2,7 +2,6 @@
 'use client';
 
 import { useProductStream } from './ProductStreamProvider';
-import { Text } from '@geist-ui/core';
 import { AlertCircle } from 'lucide-react';
 
 export default function LiveUpdates() {
@@ -13,7 +12,7 @@ export default function LiveUpdates() {
     <div className="p-3 mb-4 bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
       <div className="flex items-center">
         <AlertCircle size={16} className="text-gray-400 mr-2" />
-        <Text small className="text-gray-500">Live updates unavailable</Text>
+        <p className="text-sm text-gray-500">Live updates unavailable</p>
       </div>
     </div>
   );

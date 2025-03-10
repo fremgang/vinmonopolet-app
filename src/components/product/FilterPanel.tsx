@@ -1,7 +1,9 @@
+// src/components/product/FilterPanel.tsx
 import React, { useState, useEffect } from 'react';
-import { Button, Badge } from '@geist-ui/core';
-import { X, Filter, RefreshCw, ChevronRight, ChevronDown } from 'lucide-react';
-import PriceRangeInput from '../PriceRangeInput';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { RefreshCw, Filter, ChevronRight, ChevronDown, X } from 'lucide-react';
+import PriceRangeInput from 'src/components/PriceRangeInput'; // Make sure this is also updated to use Shadcn UI
 
 // Common countries and categories
 const COMMON_COUNTRIES = [
@@ -105,9 +107,23 @@ export default function FilterPanel({
           <Filter size={18} className="mr-2 text-wine-red" /> 
           Filters
           {activeFilterCount > 0 && (
-            <Badge type="warning" className="ml-2">{activeFilterCount}</Badge>
+            <Badge variant="outline" className="ml-2 bg-amber-50">
+              {activeFilterCount}
+            </Badge>
           )}
         </h3>
+        
+        {activeFilterCount > 0 && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleResetFilters}
+            className="h-8 px-2 text-sm text-neutral-500 hover:text-wine-red"
+          >
+            <RefreshCw size={14} className="mr-1" />
+            Reset all
+          </Button>
+        )}
       </div>
       
       {/* Country filter */}
@@ -122,12 +138,40 @@ export default function FilterPanel({
         
         {countryExpanded && (
           <div className="mt-3 space-y-2">
+            {/* Selected countries as badges */}
+            {selectedCountries.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {selectedCountries.map(country => (
+                  <Badge 
+                    key={`selected-${country}`}
+                    variant="secondary"
+                    className="flex items-center gap-1 bg-wine-red bg-opacity-10 text-wine-red hover:bg-wine-red hover:bg-opacity-20"
+                  >
+                    {country}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleCountry(country);
+                      }}
+                      className="ml-1 rounded-full hover:bg-wine-red hover:bg-opacity-10 p-0.5"
+                    >
+                      <X size={12} />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+            
             <div className="flex flex-wrap gap-2">
               {COMMON_COUNTRIES.map(country => (
                 <button
                   key={country}
                   onClick={() => toggleCountry(country)}
-                  className={`filter-chip ${selectedCountries.includes(country) ? 'active' : ''}`}
+                  className={`py-1 px-3 rounded-full text-sm border transition-colors ${
+                    selectedCountries.includes(country)
+                      ? 'bg-wine-red text-white border-wine-red'
+                      : 'bg-neutral-50 text-neutral-700 border-neutral-200 hover:bg-neutral-100'
+                  }`}
                 >
                   {country}
                 </button>
@@ -149,12 +193,40 @@ export default function FilterPanel({
         
         {categoryExpanded && (
           <div className="mt-3 space-y-2">
+            {/* Selected categories as badges */}
+            {selectedCategories.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {selectedCategories.map(category => (
+                  <Badge 
+                    key={`selected-${category}`}
+                    variant="secondary"
+                    className="flex items-center gap-1 bg-amber-500 bg-opacity-10 text-amber-700 hover:bg-amber-500 hover:bg-opacity-20"
+                  >
+                    {category}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleCategory(category);
+                      }}
+                      className="ml-1 rounded-full hover:bg-amber-500 hover:bg-opacity-10 p-0.5"
+                    >
+                      <X size={12} />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+            
             <div className="flex flex-wrap gap-2">
               {COMMON_CATEGORIES.map(category => (
                 <button
                   key={category}
                   onClick={() => toggleCategory(category)}
-                  className={`filter-chip ${selectedCategories.includes(category) ? 'active' : ''}`}
+                  className={`py-1 px-3 rounded-full text-sm border transition-colors ${
+                    selectedCategories.includes(category)
+                      ? 'bg-amber-500 text-white border-amber-500'
+                      : 'bg-neutral-50 text-neutral-700 border-neutral-200 hover:bg-neutral-100'
+                  }`}
                 >
                   {category}
                 </button>
@@ -190,30 +262,19 @@ export default function FilterPanel({
       <div className="flex justify-between mt-6">
         {activeFilterCount > 0 && (
           <Button 
-            auto
-            type="warning"
-            icon={<RefreshCw size={14} />}
+            variant="outline"
             onClick={handleResetFilters}
-            className="flex-1 mr-2" 
-            placeholder={undefined} 
-            onPointerEnterCapture={undefined} 
-            onPointerLeaveCapture={undefined}
+            className="flex-1 mr-2"
           >
+            <RefreshCw size={14} className="mr-2" />
             Reset
           </Button>
         )}
+        
         <Button 
-          auto
-          type="success"
-          style={{
-            backgroundColor: 'var(--wine-red)',
-            borderColor: 'var(--wine-red-light)'
-          }}
+          variant="default"
           onClick={handleApplyFilters}
-          className={activeFilterCount > 0 ? "flex-1" : "w-full"} 
-          placeholder={undefined} 
-          onPointerEnterCapture={undefined} 
-          onPointerLeaveCapture={undefined}
+          className={`${activeFilterCount > 0 ? "flex-1" : "w-full"} bg-wine-red hover:bg-wine-red-light`}
         >
           Apply Filters
         </Button>

@@ -60,13 +60,13 @@ export default function ProductDetailsModal({ product, visible, onClose }: Produ
           <div className="w-full md:w-3/5">
             <div className="flex flex-wrap gap-2 mb-3">
               {product.category && (
-                <Badge variant="category" className="flex items-center gap-1">
+                <Badge variant="outline" className="flex items-center gap-1">
                   <Tag size={12} />
                   <span className="truncate max-w-[120px]">{product.category}</span>
                 </Badge>
               )}
               {product.country && (
-                <Badge variant="country" className="flex items-center gap-1">
+                <Badge variant="outline" className="flex items-center gap-1">
                   <Globe size={12} />
                   <span>{product.country}</span>
                 </Badge>

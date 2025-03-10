@@ -1,18 +1,19 @@
 // src/components/layout/SplashScreen.tsx
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Text } from '@geist-ui/core';
 
 interface SplashScreenProps {
   redirectPath?: string;
   loadingTime?: number; // in seconds
-  onPreload?: () => Promise<boolean | void>; // Updated type to accept boolean or void
+  onPreload?: () => Promise<boolean | void>;
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({
   redirectPath = '/',
   loadingTime = 5, // Default 5 seconds
-  onPreload = async () => {} // Default empty function
+  onPreload = async () => {}
 }) => {
   const router = useRouter();
   const [countdown, setCountdown] = useState(loadingTime);
@@ -59,7 +60,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
       });
     }, 100); // 10 times per second
     
-    // Redirect after loading time - ENSURING a full 5 seconds passes
+    // Redirect after loading time - ENSURING a full loadingTime passes
     const redirectTimeout = setTimeout(() => {
       router.push(redirectPath);
     }, loadingTime * 1000);
@@ -72,57 +73,84 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
   }, [loadingTime, redirectPath, router, onPreload]);
 
   return (
-    <div className="fixed inset-0 bg-neutral-50 flex flex-col items-center justify-center z-50">
+    <div className="fixed inset-0 bg-cream flex flex-col items-center justify-center z-50">
       <div className="text-center max-w-md px-4">
-        <h1 className="font-serif text-3xl font-bold text-wine-red mb-6">
-          Vinmonopolet Explorer
-        </h1>
+        {/* Logo/App Name */}
+        <div className="mb-8 animate-fade-in">
+          <h1 className="font-serif text-4xl font-bold text-wine-red mb-2">
+            Vinmonopolet Explorer
+          </h1>
+          <p className="text-neutral-700">
+            Discover Norway`&apos;`s finest wines & spirits
+          </p>
+        </div>
         
-        <Text p className="text-neutral-700 mb-8">
-          Loading your premium wine and spirits experience...
-        </Text>
-        
-        <div className="flex justify-center mb-8">
-          <div className="relative w-32 h-40">
-            {/* Wine Glass Outline */}
-            <svg 
-              viewBox="0 0 100 140" 
-              className="absolute inset-0 w-full h-full" 
-              stroke="currentColor"
-              fill="none"
-              strokeWidth="2"
-            >
-              {/* Stem and Base */}
-              <path d="M50,80 L50,120 M30,130 L70,130" stroke="#8c1c13" />
-              
-              {/* Glass Bowl */}
-              <path d="M20,20 Q20,80 50,80 Q80,80 80,20" stroke="#8c1c13" />
-            </svg>
+        {/* Wine Bottle Animation */}
+        <div className="relative w-32 h-40 mx-auto mb-8">
+          <svg 
+            viewBox="0 0 100 160" 
+            className="absolute inset-0 w-full h-full" 
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {/* Bottle outline */}
+            <path 
+              d="M35,10 h30 v20 c0,0 5,5 5,10 v100 c0,10 -40,10 -40,0 v-100 c0,-5 5,-10 5,-10 z" 
+              stroke="#8c1c13" 
+              strokeWidth="2" 
+              fill="white" 
+            />
             
-            {/* Improved Wine Fill - better matches glass shape */}
-            <div 
-              className="absolute bg-wine-red transition-all duration-100 ease-linear rounded-b-full overflow-hidden"
-              style={{ 
-                bottom: '60px', // Positioned at bottom of bowl
-                left: '25px',   // Aligned with left of bowl
-                right: '25px',  // Aligned with right of bowl
-                borderRadius: '0 0 100% 100%', // Curved bottom like a wine
-                height: `${Math.min(fillPercent * 0.6, 60)}px`, // Scale to max height
-                maxHeight: '60px', // Max height of wine
-                opacity: 0.9
+            {/* Wine fill - using a clipPath for proper animation */}
+            <defs>
+              <clipPath id="bottle-mask">
+                <path d="M35,30 c0,-5 5,-10 5,-10 h20 c0,0 5,5 5,10 v100 c0,10 -30,10 -30,0 z" />
+              </clipPath>
+              
+              {/* Wine gradient definition */}
+              <linearGradient id="wine-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#8c1c13" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#b32c1b" stopOpacity="0.8" />
+              </linearGradient>
+            </defs>
+            
+            {/* Rectangle that gets clipped by the bottle shape */}
+            <rect 
+              x="30" 
+              y="30" 
+              width="40" 
+              height="110" 
+              fill="url(#wine-gradient)" 
+              clipPath="url(#bottle-mask)"
+              style={{
+                // This rectangle starts at full height and we scale it based on fill percentage
+                // using CSS transform directly in the style attribute
+                transform: `scaleY(${fillPercent/100})`,
+                transformBox: "fill-box",
+                transformOrigin: "bottom"
               }}
+            />
+          </svg>
+        </div>
+        
+        {/* Loading progress indicator */}
+        <div className="bg-white bg-opacity-80 rounded-lg py-3 px-4 shadow-sm">
+          <div className="flex justify-between items-center">
+            <span className="text-neutral-600">Loading your experience...</span>
+            <span className="font-medium text-wine-red">{`${Math.round(fillPercent)}%`}</span>
+          </div>
+          <div className="h-2 bg-neutral-100 rounded-full mt-2 overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-wine-red to-wine-red-light transition-all duration-200 ease-out"
+              style={{ width: `${fillPercent}%` }}
             />
           </div>
         </div>
         
-        <Text className="text-neutral-600">
-          Ready in <span className="font-bold text-wine-red">{countdown}</span> seconds...
-        </Text>
-        
+        {/* Status message - only shown when preload is complete */}
         {preloadComplete && (
-          <Text small className="text-green-600 mt-2">
+          <p className="text-sm text-green-600 mt-3">
             Resources loaded, preparing your experience...
-          </Text>
+          </p>
         )}
       </div>
     </div>
