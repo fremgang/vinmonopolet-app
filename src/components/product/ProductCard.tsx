@@ -1,5 +1,5 @@
 // src/components/product/ProductCard.tsx
-import React, { useState, useEffect, forwardRef } from 'react';
+import * as React from 'react';
 import Image from 'next/image';
 import { Product } from '@/types';
 import { 
@@ -16,55 +16,43 @@ interface ProductCardProps {
   onClick?: () => void;
   loading?: boolean;
   isPriority?: boolean;
+  imageSize?: 'tiny' | 'small' | 'medium' | 'large';
+  useWebP?: boolean;
 }
 
 const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
-  ({ product, onClick, loading = false, isPriority = false }, ref) => {
+  ({ 
+    product, 
+    onClick, 
+    loading = false, 
+    isPriority = false, 
+    imageSize = 'small',
+    useWebP = true
+  }, ref) => {
     const [imageError, setImageError] = useState<boolean>(false);
-    const [imageUrl, setImageUrl] = useState<string>('');
-    const [cardHeight, setCardHeight] = useState<number>(0);
+    const [cachedImageUrl, setCachedImageUrl] = useState<string>('');
     
-    // Reset states if product changes
+    // Generate cached image URL when product changes
     useEffect(() => {
-      setImageError(false);
-      setImageUrl(product.imageMain || '');
-    }, [product.product_id, product.imageMain]);
-
-    // Use ResizeObserver to maintain aspect ratio and adjust image size dynamically
-    useEffect(() => {
-      if (typeof window === 'undefined') return;
-      
-      const observer = new ResizeObserver(entries => {
-        for (const entry of entries) {
-          // Set a fixed aspect ratio
-          const width = entry.contentRect.width;
-          setCardHeight(width * 1.4); // Slightly taller ratio
-          
-          // Adjust image container based on card width
-          const cardElement = document.getElementById(`product-card-${product.product_id}`);
-          if (cardElement) {
-            const imageContainer = cardElement.querySelector('.product-image-wrapper') as HTMLElement;
-            if (imageContainer) {
-              // Dynamically adjust image size based on card width
-              if (width < 200) {
-                imageContainer.style.height = '130px';
-                imageContainer.style.width = '90px';
-              } else {
-                imageContainer.style.height = '150px'; 
-                imageContainer.style.width = '110px';
-              }
-            }
-          }
-        }
-      });
-      
-      const cardElement = document.getElementById(`product-card-${product.product_id}`);
-      if (cardElement) {
-        observer.observe(cardElement);
+      if (!product?.imageMain) {
+        setImageError(true);
+        return;
       }
       
-      return () => observer.disconnect();
-    }, [product.product_id]);
+      setImageError(false);
+      
+      // Construct the cache API URL
+      const params = new URLSearchParams({
+        url: encodeURIComponent(product.imageMain),
+        size: imageSize
+      });
+      
+      if (useWebP) {
+        params.append('webp', 'true');
+      }
+      
+      setCachedImageUrl(`/api/products/image-cache?${params.toString()}`);
+    }, [product.product_id, product.imageMain, imageSize, useWebP]);
 
     const {
       product_id,
@@ -86,7 +74,6 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
     // Format price with Norwegian format
     const formatPrice = (price: number | null) => {
       if (price === null) return 'N/A';
-      // Format as "XX XXX kr" to match the screenshot
       return `${new Intl.NumberFormat('no-NO').format(price)} kr`;
     };
 
@@ -119,13 +106,25 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
       return description;
     };
 
+    // Get image dimensions based on size
+    const getImageDimensions = () => {
+      switch (imageSize) {
+        case 'tiny': return { width: 100, height: 100 };
+        case 'small': return { width: 300, height: 300 };
+        case 'medium': return { width: 515, height: 515 };
+        case 'large': return { width: 800, height: 800 };
+        default: return { width: 300, height: 300 };
+      }
+    };
+
+    const dimensions = getImageDimensions();
+
     return (
       <Card 
         ref={ref}
         id={`product-card-${product_id}`}
         onClick={onClick}
-        className="h-full max-w-[280px] transition-all duration-200 hover:shadow-md hover:-translate-y-1 cursor-pointer flex flex-col overflow-hidden mx-auto bg-white rounded-md"
-        style={{ minHeight: cardHeight > 0 ? `${cardHeight}px` : 'auto' }}
+        className="h-full w-full transition-all duration-200 hover:shadow-md hover:-translate-y-1 cursor-pointer flex flex-col overflow-hidden mx-auto bg-white rounded-md"
       >
         <CardHeader className="pb-2 px-4 pt-4 border-b border-neutral-100">
           <CardTitle className="text-base line-clamp-2 text-center font-medium">
@@ -138,24 +137,23 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
             {/* Center product image */}
             <div className="flex justify-center mb-3">
               <div className="product-image-wrapper h-[150px] w-[110px] flex items-center justify-center bg-white p-1">
-              {!imageError && imageUrl ? (
-  <Image
-    src={`/api/products/image-cache?url=${encodeURIComponent(imageUrl)}`}
-    alt={name}
-    width={110}
-    height={150}
-    className="max-h-[150px] w-auto object-contain"
-    sizes="110px"
-    // Remove loading="lazy" when priority is true
-    {...(isPriority ? { priority: true } : { loading: 'lazy' })}
-    onError={handleImageError}
-    style={{ width: 'auto', height: '100%' }}
-  />
-) : (
-  <div className="flex items-center justify-center w-full h-full text-neutral-400 text-xs text-center">
-    No image
-  </div>
-)}
+                {!imageError && cachedImageUrl ? (
+                  <Image
+                    src={cachedImageUrl}
+                    alt={name}
+                    width={110}
+                    height={150}
+                    className="max-h-[150px] w-auto object-contain"
+                    sizes={`${Math.min(dimensions.width, 110)}px`}
+                    {...(isPriority ? { priority: true } : { loading: 'lazy' })}
+                    onError={handleImageError}
+                    style={{ width: 'auto', height: '100%' }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full text-neutral-400 text-xs text-center">
+                    No image
+                  </div>
+                )}
               </div>
             </div>
             

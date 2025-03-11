@@ -1,6 +1,14 @@
-// build-fix.js (CommonJS version)
-const fs = require('fs');
-const path = require('path');
+// build-fix.js (ESM version)
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get current file's directory in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Get the project root directory (one level up from scripts)
+const projectRoot = path.resolve(__dirname, '..');
 
 // Helper to create directory if it doesn't exist
 function ensureDirectoryExists(directory) {
@@ -12,24 +20,24 @@ function ensureDirectoryExists(directory) {
 
 // Create necessary component directories
 console.log('Setting up component directories...');
-const componentsDir = path.join(__dirname, 'src', 'components');
+const componentsDir = path.join(projectRoot, 'src', 'components');
 ensureDirectoryExists(componentsDir);
 ensureDirectoryExists(path.join(componentsDir, 'product'));
 ensureDirectoryExists(path.join(componentsDir, 'layout'));
 
 // Create necessary hooks directories
 console.log('Setting up hooks directory...');
-const hooksDir = path.join(__dirname, 'src', 'hooks');
+const hooksDir = path.join(projectRoot, 'src', 'hooks');
 ensureDirectoryExists(hooksDir);
 
 // Create types directory
 console.log('Setting up types directory...');
-const typesDir = path.join(__dirname, 'src', 'types');
+const typesDir = path.join(projectRoot, 'src', 'types');
 ensureDirectoryExists(typesDir);
 
 // Create utils directory
 console.log('Setting up utils directory...');
-const utilsDir = path.join(__dirname, 'src', 'utils');
+const utilsDir = path.join(projectRoot, 'src', 'utils');
 ensureDirectoryExists(utilsDir);
 
 // Verify that usePreloadData.ts exists in hooks directory

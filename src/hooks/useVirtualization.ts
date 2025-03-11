@@ -29,14 +29,18 @@ export function useVirtualization<T>({
   // Ref to track throttling
   const throttleTimerRef = useRef<number | null>(null);
 
-  // Calculate column count based on screen width
+  // Calculate column count based on screen width - now more responsive
   const calculateColumnCount = useCallback(() => {
     if (typeof window === 'undefined') return 3; // Default to desktop during SSR
     
-    // Default column counts based on breakpoints
-    // These should match your Tailwind breakpoints in the grid
-    if (window.innerWidth >= 1024) return 3; // lg
-    if (window.innerWidth >= 640) return 2; // sm
+    const viewportWidth = window.innerWidth;
+
+    // More granular breakpoints for better adaptability
+    if (viewportWidth >= 1536) return 6; // 2xl
+    if (viewportWidth >= 1280) return 5; // xl
+    if (viewportWidth >= 1024) return 4; // lg
+    if (viewportWidth >= 768) return 3; // md
+    if (viewportWidth >= 640) return 2; // sm
     return 1; // mobile
   }, []);
 
@@ -47,7 +51,7 @@ export function useVirtualization<T>({
     const scrollY = window.scrollY;
     setScrollPosition(scrollY);
     
-    // Update column count
+    // Update column count dynamically
     const columns = calculateColumnCount();
     setCurrentColumnCount(columns);
     
@@ -148,15 +152,6 @@ export function useVirtualization<T>({
       visible
     };
   });
-
-  // For debugging
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(
-        `Rendering ${virtualItems.filter(i => i.visible).length} items out of ${items.length} total`
-      );
-    }
-  }, [virtualItems, items.length]);
 
   return {
     visibleWindow,

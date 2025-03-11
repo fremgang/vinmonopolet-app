@@ -1,20 +1,23 @@
-// src/components/product/DynamicProductGrid.tsx
-import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+// src/components/product/ProductGrid.tsx
+import React, { useEffect, useState, useRef } from 'react';
 import ProductCard from './ProductCard';
 import SkeletonProductCard from './SkeletonProductCard';
 import { Product } from '@/types';
+import imageService, { ImageSize } from '@/services/imageService';
 
-interface DynamicProductGridProps {
+interface ProductGridProps {
   products: Product[];
   onProductClick: (product: Product) => void;
-  loaderRef?: React.RefObject<HTMLDivElement>; // Correctly typed as RefObject<HTMLDivElement>
+  loaderRef?: React.RefObject<HTMLDivElement>;
   visibleWindow?: { start: number; end: number; itemCount: number };
   loading?: boolean;
   initialLoading?: boolean;
   showSkeletons?: boolean;
+  imageSize?: ImageSize;
+  useWebP?: boolean;
 }
 
-export default function DynamicProductGrid({ 
+export default function ProductGrid({ 
   products, 
   onProductClick,
   loaderRef,
@@ -22,64 +25,83 @@ export default function DynamicProductGrid({
   loading = false,
   initialLoading = false,
   showSkeletons = true,
-}: DynamicProductGridProps) {
+  imageSize = 'small',
+  useWebP = true
+}: ProductGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
-  const [columnCount, setColumnCount] = useState(3);
-  const [cardWidth, setCardWidth] = useState(280); // Default card width
+  const [minCardWidth, setMinCardWidth] = useState(300); // Larger minimum card width
   const [gridGap, setGridGap] = useState(20); // Default gap
-  const minCardWidth = 240; // Minimum card width
+  const [imageLoadingCount, setImageLoadingCount] = useState(0);
 
-  // Calculate optimal column count and card sizes
+  // Track image preloading
+  useEffect(() => {
+    if (!products || products.length === 0) return;
+    
+    // Preload first 6 images for above the fold content
+    const preloadImages = async () => {
+      setImageLoadingCount(prevCount => prevCount + 6);
+      
+      try {
+        const preloadPromises = products.slice(0, 6).map(product => {
+          return new Promise<void>((resolve) => {
+            if (!product.imageMain) {
+              resolve();
+              return;
+            }
+            
+            const img = new Image();
+            img.onload = () => {
+              setImageLoadingCount(prevCount => Math.max(0, prevCount - 1));
+              resolve();
+            };
+            img.onerror = () => {
+              setImageLoadingCount(prevCount => Math.max(0, prevCount - 1));
+              resolve();
+            };
+            img.src = imageService.getProductImageUrl(product, { size: imageSize, format: useWebP ? 'webp' : 'jpg' });
+          });
+        });
+        
+        await Promise.allSettled(preloadPromises);
+      } catch (err) {
+        console.error('Error preloading images:', err);
+      }
+    };
+    
+    preloadImages();
+  }, [products, imageSize, useWebP]);
+
+  // Calculate optimal grid layout
   useEffect(() => {
     if (!gridRef.current) return;
     
     // Store reference to current grid element
     const currentGridRef = gridRef.current;
 
-    const calculateColumns = () => {
+    const calculateGridLayout = () => {
       const containerWidth = currentGridRef?.clientWidth || 1200;
-      const maxCardWidth = 280; // Maximum card width
-      const gap = 20; // Gap between cards
       
-      // Calculate how many columns can fit with optimal sizing
-      let possibleColumns = Math.floor((containerWidth + gap) / (minCardWidth + gap));
+      // Determine minimum card width based on container size
+      let optimalMinWidth = 340; // Larger default minimum width
       
-      // Ensure at least 2 columns and maximum of 8 columns
-      // Increased minimum columns to 3 when space allows
-      if (containerWidth > 768) {
-        possibleColumns = Math.max(3, Math.min(8, possibleColumns));
-      } else {
-        possibleColumns = Math.max(2, Math.min(8, possibleColumns));
+      // Make cards smaller on small screens
+      if (containerWidth < 640) {
+        optimalMinWidth = 280; // Larger on mobile
+      } else if (containerWidth < 1024) {
+        optimalMinWidth = 320; // Larger on tablets
       }
       
-      // Calculate the actual card width based on the column count
-      let optimalCardWidth = Math.floor((containerWidth - (gap * (possibleColumns - 1))) / possibleColumns);
-      
-      // If the card would be too wide, add another column
-      if (optimalCardWidth > maxCardWidth && possibleColumns < 8) {
-        possibleColumns += 1;
-        optimalCardWidth = Math.floor((containerWidth - (gap * (possibleColumns - 1))) / possibleColumns);
-      }
-      
-      // Log for debugging
-      console.log(`Grid: ${containerWidth}px width, ${possibleColumns} columns, ${optimalCardWidth}px per card`);
-      
-      setColumnCount(possibleColumns);
-      setCardWidth(optimalCardWidth);
-      setGridGap(gap);
+      setMinCardWidth(optimalMinWidth);
+      setGridGap(containerWidth < 640 ? 12 : 20); // Smaller gaps on mobile
     };
 
     // Initial calculation
-    calculateColumns();
+    calculateGridLayout();
     
     // Calculate on resize
-    const resizeObserver = new ResizeObserver(entries => {
-      // Throttle resize calculations
-      if (window.requestAnimationFrame) {
-        window.requestAnimationFrame(calculateColumns);
-      } else {
-        setTimeout(calculateColumns, 66); // ~15fps
-      }
+    const resizeObserver = new ResizeObserver(() => {
+      // Throttle resize calculations with requestAnimationFrame
+      window.requestAnimationFrame(calculateGridLayout);
     });
     
     resizeObserver.observe(currentGridRef);
@@ -90,36 +112,40 @@ export default function DynamicProductGrid({
   }, []);
 
   // Handle virtualized rendering if visibleWindow is provided
-  const visibleProducts = useMemo(() => {
+  const visibleProducts = React.useMemo(() => {
     if (!visibleWindow) return products;
-    
     return products.slice(visibleWindow.start, visibleWindow.end + 1);
   }, [products, visibleWindow]);
   
   // Generate skeleton placeholders for loading state
-  const createSkeletonCards = useCallback((count: number) => {
+  const createSkeletonCards = (count: number) => {
     return Array(count).fill(0).map((_, index) => (
       <div 
         key={`skeleton-${index}`}
         style={{ 
           margin: '0 auto', 
-          width: '100%',
-          // Match exact height of product cards
-          minHeight: `${cardWidth * 1.4}px` 
+          width: '100%'
         }}
       >
         <SkeletonProductCard animated={true} />
       </div>
     ));
-  }, [cardWidth]);
+  };
   
-  const skeletonCards = useMemo(() => {
-    if (!showSkeletons || (!initialLoading && !loading)) return [];
-    
-    // Number of skeletons to show based on column count
-    const skeletonCount = initialLoading ? columnCount * 4 : columnCount;
-    return createSkeletonCards(skeletonCount);
-  }, [columnCount, initialLoading, loading, showSkeletons, createSkeletonCards]);
+  // Determine number of skeleton cards based on viewport width
+  const getSkeletonCount = () => {
+    if (typeof window !== 'undefined') {
+      // Base the skeleton count on the approximate number of visible columns
+      const viewportWidth = window.innerWidth;
+      
+      // Roughly estimate how many columns would fit
+      const estimatedColumns = Math.floor(viewportWidth / (minCardWidth + gridGap));
+      
+      // Create enough skeletons for 4 rows
+      return Math.max(4, estimatedColumns) * 4;
+    }
+    return 12; // Default fallback
+  };
 
   if (initialLoading && showSkeletons) {
     // Show skeleton grid for initial loading
@@ -128,12 +154,12 @@ export default function DynamicProductGrid({
         <div 
           className="grid mx-auto"
           style={{ 
-            gridTemplateColumns: `repeat(auto-fill, minmax(${minCardWidth}px, 1fr))`,
+            gridTemplateColumns: `repeat(auto-fill, minmax(${minCardWidth + 40}px, 1fr))`,
             gap: `${gridGap}px`,
             width: '100%'
           }}
         >
-          {createSkeletonCards(columnCount * 4)}
+          {createSkeletonCards(getSkeletonCount())}
         </div>
       </div>
     );
@@ -144,7 +170,7 @@ export default function DynamicProductGrid({
       <div 
         className="grid mx-auto"
         style={{ 
-          gridTemplateColumns: `repeat(auto-fill, minmax(${minCardWidth}px, 1fr))`,
+          gridTemplateColumns: `repeat(auto-fill, minmax(${minCardWidth + 40}px, 1fr))`,
           gap: `${gridGap}px`,
           width: '100%'
         }}
@@ -157,14 +183,27 @@ export default function DynamicProductGrid({
             <ProductCard 
               product={product}
               onClick={() => onProductClick(product)}
-              isPriority={index < 6} // Add priority to first 6 images that will be above the fold
+              isPriority={index < 9} // Prioritize first 9 images for above the fold
+              imageSize={imageSize}
+              useWebP={useWebP}
             />
           </div>
         ))}
         
         {/* Show skeleton loaders at the end if loading more */}
-        {loading && !initialLoading && showSkeletons && skeletonCards}
+        {loading && !initialLoading && showSkeletons && (
+          <>
+            {createSkeletonCards(Math.max(2, Math.floor(getSkeletonCount() / 4)))}
+          </>
+        )}
       </div>
+      
+      {/* Image preloading indicator (only visible in development) */}
+      {process.env.NODE_ENV === 'development' && imageLoadingCount > 0 && (
+        <div className="fixed bottom-4 left-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded text-xs">
+          Preloading {imageLoadingCount} images...
+        </div>
+      )}
       
       {/* Loader for infinite scroll */}
       {loaderRef && (

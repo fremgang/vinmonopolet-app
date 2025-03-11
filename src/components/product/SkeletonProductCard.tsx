@@ -12,7 +12,7 @@ const SkeletonProductCard: React.FC<SkeletonProductCardProps> = ({
   const animationClass = animated ? 'animate-pulse' : '';
   
   return (
-    <Card className="h-full max-w-[280px] border border-gray-200 mx-auto">
+    <Card className="h-full w-full border border-gray-200 mx-auto">
       {/* Card Header with Skeleton Title */}
       <CardHeader className="pb-2 px-4 pt-4 border-b border-neutral-100">
         <div className={`h-5 bg-neutral-200 rounded-md w-4/5 mx-auto ${animationClass}`}></div>

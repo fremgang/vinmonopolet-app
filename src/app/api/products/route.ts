@@ -1,4 +1,4 @@
-// src/app/api/products/route.ts
+// src/app/api/products/route.ts - price filter fix
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -23,8 +23,18 @@ export async function GET(request: Request) {
       : 'asc';
     
     const search = searchParams.get('search') || '';
-    const minPrice = Math.max(0, parseInt(searchParams.get('minPrice') || '0'));
-    const maxPrice = Math.max(minPrice, parseInt(searchParams.get('maxPrice') || '100000'));
+    
+    // Updated price filter handling
+    let minPrice = 0;
+    let maxPrice = 10000000; // Increase max price to a much higher value
+    
+    if (searchParams.has('minPrice')) {
+      minPrice = Math.max(0, parseInt(searchParams.get('minPrice') || '0'));
+    }
+    
+    if (searchParams.has('maxPrice')) {
+      maxPrice = Math.max(minPrice, parseInt(searchParams.get('maxPrice') || '10000000'));
+    }
     
     const countries = searchParams.getAll('countries');
     const categories = searchParams.getAll('categories');
@@ -53,7 +63,7 @@ export async function GET(request: Request) {
       ];
     }
     
-    if (minPrice > 0 || maxPrice < 100000) {
+    if (minPrice > 0 || maxPrice < 10000000) {
       where.price = {
         gte: minPrice,
         lte: maxPrice
