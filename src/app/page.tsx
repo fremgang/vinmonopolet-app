@@ -1,7 +1,7 @@
 // src/app/page.tsx - Main integration
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -14,32 +14,14 @@ import { useVirtualization } from '@/hooks/useVirtualization';
 
 // Components
 import FilterPanel from '@/components/product/FilterPanel'; 
-import ProductCard from '@/components/product/ProductCard'; // Use Shadcn version
+import ProductCard from '@/components/product/ProductCard';
 import ProductDetailsModal from '@/components/product/ProductDetailsModal';
 import SplashScreen from '@/components/layout/SplashScreen';
-import ProductGrid from '@/components/product/ProductGrid';
+import DynamicProductGrid from '@/components/product/DynamicProductGrid';
+import SkeletonProductCard from '@/components/product/SkeletonProductCard';
 
 // Import types
 import { Product, LoadingState, DebugStateMonitorProps } from '@/types';
-
-// Simple Product List component to ensure products display
-const SimpleProductList = ({ products, onProductClick }: { products: Product[]; onProductClick: (product: Product) => void; }) => {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {products.map(product => (
-        <div key={product.product_id} className="h-full">
-          <ProductCard 
-            product={product}
-            onClick={() => onProductClick(product)}
-          />
-        </div>
-      ))}
-      
-      {/* Add an empty div at the end for the infinite scroll loader */}
-      <div className="col-span-full h-20" id="infinite-scroll-marker"></div>
-    </div>
-  );
-};
 
 // Debug component with explicit typing
 function DebugStateMonitor({ 
@@ -93,12 +75,13 @@ export default function Home() {
     updateFilters,
     handleSortChange,
     clearCache,
-    loaderRef,
     ensureLoadedState
   } = useProducts();
   
   // Force products loading state - explicit override
   const [forceShowProducts, setForceShowProducts] = useState(false);
+
+  const loaderRef = useRef<HTMLDivElement>(null);
   
   // Define a local setLoadingState function if not provided by the hook
   const setLoadingState = useCallback((state: LoadingState) => {
@@ -146,6 +129,9 @@ export default function Home() {
   useEffect(() => {
     if (!loaderRef.current || !hasMore || loading) return;
     
+    // Store reference to current loader element
+    const currentLoaderRef = loaderRef.current;
+    
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading) {
@@ -155,16 +141,16 @@ export default function Home() {
       { threshold: 0.1 }
     );
     
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
+    if (currentLoaderRef) {
+      observer.observe(currentLoaderRef);
     }
     
     return () => {
-      if (loaderRef.current) {
-        observer.unobserve(loaderRef.current);
+      if (currentLoaderRef) {
+        observer.unobserve(currentLoaderRef);
       }
     };
-  }, [hasMore, loading, loadMoreProducts, loaderRef]);
+  }, [hasMore, loading, loadMoreProducts]);
   
   // Enhanced virtualization with skeleton page management
   const { 
@@ -210,12 +196,6 @@ export default function Home() {
       forceShowProducts
     });
   }, [products.length, loadingState, initialLoading, loading, forceShowProducts]);
-  
-  // Format price with Norwegian format
-  const formatPrice = (price: number | null) => {
-    if (price === null) return 'N/A';
-    return `${new Intl.NumberFormat('no-NO').format(price)} kr`;
-  };
   
   // Retry loading on error
   const handleRetry = () => {
@@ -338,74 +318,37 @@ export default function Home() {
         </p>
       </div>
       
-      {/* Conditional rendering based on products and loading state */}
+      {/* Product grid using the DynamicProductGrid component */}
       {initialLoading && products.length === 0 ? (
-        // Show skeleton cards during initial loading
-        <ProductGrid
+        <DynamicProductGrid
           products={[]}
+          onProductClick={() => {}}
           loading={true}
           initialLoading={true}
-          loadingState={'loading'}
-          hasMore={false}
+          showSkeletons={true}
           visibleWindow={visibleWindow}
-          visibleSkeletonPages={visibleSkeletonPages}
-          columnCount={columnCount}
-          onProductClick={() => {}}
-          loaderRef={loaderRef}
-          skeletonOptions={{
-            skeletonCount: 12,
-            loadMoreSkeletonCount: 6,
-            totalSkeletonPages: 5
-          }}
         />
+      ) : products.length > 0 || forceShowProducts ? (
+<DynamicProductGrid
+  products={products}
+  onProductClick={(product) => {
+    setSelectedProduct(product);
+    setModalOpen(true);
+  }}
+  loading={loading}
+  initialLoading={false}
+  loaderRef={loaderRef}
+  visibleWindow={visibleWindow}
+/>
       ) : (
-        // Products are loaded or forceShowProducts is true
-        products.length > 0 || forceShowProducts ? (
-          // Show the simplified product list
-          <SimpleProductList 
-            products={products}
-            onProductClick={(product) => {
-              setSelectedProduct(product);
-              setModalOpen(true);
-            }}
-          />
-        ) : (
-          // Show skeleton grid while loading
-          <ProductGrid
-            products={products}
-            loading={loading}
-            initialLoading={initialLoading}
-            loadingState={loadingState}
-            hasMore={hasMore}
-            visibleWindow={visibleWindow}
-            visibleSkeletonPages={visibleSkeletonPages}
-            columnCount={columnCount}
-            onProductClick={(product) => {
-              setSelectedProduct(product);
-              setModalOpen(true);
-            }}
-            loaderRef={loaderRef}
-            skeletonOptions={{
-              skeletonCount: 12,
-              loadMoreSkeletonCount: 6,
-              totalSkeletonPages: 5
-            }}
-          />
-        )
-      )}
-      
-      {/* Loading indicator for infinite scroll */}
-      {loading && !initialLoading && (
-        <div ref={loaderRef} className="text-center py-8 text-neutral-500">
-          Loading more products...
-        </div>
-      )}
-      
-      {/* End of results indicator */}
-      {!loading && !initialLoading && hasMore === false && products.length > 0 && (
-        <div className="text-center py-8 text-neutral-500">
-          End of results
-        </div>
+        <DynamicProductGrid
+          products={[]}
+          onProductClick={() => {}}
+          loading={loading}
+          initialLoading={initialLoading}
+          showSkeletons={true}
+          visibleWindow={visibleWindow}
+        />
       )}
       
       {/* Product Details Modal */}

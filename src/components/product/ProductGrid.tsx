@@ -1,5 +1,5 @@
 // src/components/product/ProductGrid.tsx
-import React, { useMemo } from 'react';
+import React from 'react';
 import ProductCard from './ProductCard';
 import SkeletonController from './SkeletonController';
 import { Product } from '@/types';
@@ -29,8 +29,8 @@ export default function ProductGrid({
   loadingState,
   hasMore,
   visibleWindow = { start: 0, end: 50, itemCount: 0 },
-  visibleSkeletonPages = [0, 1], // Default to first two pages
-  columnCount = 3,
+  visibleSkeletonPages = [0, 1],
+  columnCount = 4, // Increased from 3 to 4 columns for narrower cards
   onProductClick,
   loaderRef,
   skeletonOptions = {}
@@ -43,7 +43,7 @@ export default function ProductGrid({
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4 mx-auto">
         {/* Skeleton Controller handles all skeleton rendering efficiently */}
         <SkeletonController 
           isInitialLoading={initialLoading && products.length === 0}
@@ -56,16 +56,16 @@ export default function ProductGrid({
         
         {/* Products content with virtualization */}
         {!initialLoading && products.map((product, index) => {
-  // Virtualization logic
-  if (index < visibleWindow.start || index > visibleWindow.end) {
-    return (
-      <div 
-        key={`placeholder-${product.product_id}`}
-        className="h-[350px]" 
-        aria-hidden="true"
-      />
-    );
-  }
+          // Virtualization logic
+          if (index < visibleWindow.start || index > visibleWindow.end) {
+            return (
+              <div 
+                key={`placeholder-${product.product_id}`}
+                className="h-[350px]" 
+                aria-hidden="true"
+              />
+            );
+          }
           
           // Check if product is at the edge of our window - if so, render skeleton for smooth transitions
           const isEdgeItem = (index >= visibleWindow.end - 9 && index <= visibleWindow.end) || 
@@ -77,7 +77,7 @@ export default function ProductGrid({
                 <ProductCard 
                   product={product}
                   onClick={() => onProductClick(product)}
-                  isLoading={true} // Pass loading state to ProductCard
+                  loading={true} // Pass loading state to ProductCard
                 />
               </div>
             );

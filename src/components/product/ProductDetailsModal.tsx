@@ -5,7 +5,7 @@ import { Product } from '@/types';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingBag, Globe, MapPin, Wine, X, Tag } from 'lucide-react';
+import { ShoppingBag, Globe, MapPin, Wine, X, Tag, Droplet, BookOpen } from 'lucide-react';
 import { getCachedImageUrl } from '@/lib/image-utils';
 
 interface ProductModalProps {
@@ -23,13 +23,27 @@ export default function ProductDetailsModal({ product, visible, onClose }: Produ
     return new Intl.NumberFormat('no-NO', { style: 'currency', currency: 'NOK' }).format(price);
   };
 
+  // Format product ID for display
+  const formatProductId = (id: string) => {
+    if (!id) return '';
+    return id.replace(/^(\d+).*$/, '$1'); // Extract first numeric part
+  };
+
   return (
     <Dialog open={visible} onOpenChange={(open) => {
       if (!open) onClose();
     }}>
       <DialogContent className="sm:max-w-[825px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-serif pr-8">{product.name}</DialogTitle>
+          <div className="flex justify-between items-start">
+            <div>
+              <DialogTitle className="text-2xl font-serif pr-8">{product.name}</DialogTitle>
+              <p className="text-neutral-500 mt-1">Product ID: {formatProductId(product.product_id)}</p>
+            </div>
+            <div className="text-2xl font-bold text-[var(--wine-red)]">
+              {formatPrice(product.price)}
+            </div>
+          </div>
           {product.category && (
             <DialogDescription>
               {product.category}
@@ -76,9 +90,32 @@ export default function ProductDetailsModal({ product, visible, onClose }: Produ
               )}
             </div>
             
-            <div className="text-2xl font-bold text-[var(--wine-red)] mb-4">
-              {formatPrice(product.price)}
-            </div>
+            {/* Taste Profile - Highlighted Section */}
+            {(product.lukt || product.smak) && (
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-4 border-l-4 border-[var(--wine-red)]">
+                <h3 className="font-medium mb-3 text-[var(--wine-red)]">Taste Profile</h3>
+                
+                {product.lukt && (
+                  <div className="mb-3">
+                    <div className="flex items-center">
+                      <Droplet size={16} className="mr-2 text-[var(--wine-red-light)]" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Aroma:</span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 ml-6 mt-1">{product.lukt}</p>
+                  </div>
+                )}
+                
+                {product.smak && (
+                  <div>
+                    <div className="flex items-center">
+                      <BookOpen size={16} className="mr-2 text-[var(--wine-red-light)]" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Taste:</span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 ml-6 mt-1">{product.smak}</p>
+                  </div>
+                )}
+              </div>
+            )}
             
             {/* Main details */}
             <div className="space-y-4 mb-4">
@@ -104,26 +141,27 @@ export default function ProductDetailsModal({ product, visible, onClose }: Produ
                   </div>
                 </div>
               )}
-            </div>
-            
-            {/* Taste profile */}
-            {(product.lukt || product.smak) && (
-              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                <h3 className="font-medium mb-3">Taste Profile</h3>
-                {product.lukt && (
-                  <div className="mb-3">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Aroma:</span>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{product.lukt}</p>
-                  </div>
-                )}
-                {product.smak && (
+              
+              {product.metode && (
+                <div className="flex items-start">
+                  <div className="mr-2 text-gray-500 mt-1 flex-shrink-0">📝</div>
                   <div>
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Taste:</span>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{product.smak}</p>
+                    <span className="font-medium">Method</span>
+                    <div className="text-gray-600">{product.metode}</div>
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+              
+              {product.inneholder && (
+                <div className="flex items-start">
+                  <div className="mr-2 text-gray-500 mt-1 flex-shrink-0">🔍</div>
+                  <div>
+                    <span className="font-medium">Contains</span>
+                    <div className="text-gray-600">{product.inneholder}</div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         

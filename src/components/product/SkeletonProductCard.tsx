@@ -1,5 +1,6 @@
 // src/components/product/SkeletonProductCard.tsx
 import React from 'react';
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 
 interface SkeletonProductCardProps {
   animated?: boolean;
@@ -11,59 +12,47 @@ const SkeletonProductCard: React.FC<SkeletonProductCardProps> = ({
   const animationClass = animated ? 'animate-pulse' : '';
   
   return (
-    <div className="product-card h-full">
+    <Card className="h-full max-w-[280px] border border-gray-200 mx-auto">
       {/* Card Header with Skeleton Title */}
-      <div className="product-card-header">
-        <div className={`h-6 bg-neutral-200 rounded-md w-4/5 mx-auto ${animationClass}`} />
-      </div>
+      <CardHeader className="pb-2 px-4 pt-4 border-b border-neutral-100">
+        <div className={`h-5 bg-neutral-200 rounded-md w-4/5 mx-auto ${animationClass}`}></div>
+        <div className={`h-4 bg-neutral-200 rounded-md w-2/3 mx-auto mt-2 ${animationClass}`}></div>
+      </CardHeader>
       
-      {/* Card Body with Skeleton Image and Content */}
-      <div className="product-card-body">
-        {/* Skeleton Image Container */}
-        <div className="product-card-image-container flex items-center justify-center">
-          <div className={`w-24 h-36 bg-neutral-200 rounded-md ${animationClass}`} />
-        </div>
-
-        {/* Skeleton Content Section */}
-        <div className="product-card-content">
-          {/* Skeleton Aroma Section */}
-          <div className="product-card-section">
-            <div className={`h-3 bg-neutral-200 rounded-md w-16 mb-2 ${animationClass}`} />
-            <div className={`h-4 bg-neutral-200 rounded-md w-full ${animationClass}`} />
-            <div className={`h-4 bg-neutral-200 rounded-md w-4/5 mt-1 ${animationClass}`} />
+      <CardContent className="p-4 flex-grow flex flex-col">
+        <div className="flex flex-col h-full">
+          {/* Center product image placeholder */}
+          <div className="flex justify-center mb-3">
+            <div className={`h-[150px] w-[110px] bg-neutral-200 rounded-md ${animationClass}`}></div>
           </div>
           
-          {/* Skeleton Taste Section */}
-          <div className="product-card-section mt-4">
-            <div className={`h-3 bg-neutral-200 rounded-md w-16 mb-2 ${animationClass}`} />
-            <div className={`h-4 bg-neutral-200 rounded-md w-full ${animationClass}`} />
-            <div className={`h-4 bg-neutral-200 rounded-md w-3/4 mt-1 ${animationClass}`} />
+          {/* Taste section placeholder */}
+          <div className="flex-grow">
+            <div className={`h-3 bg-neutral-200 rounded-md w-24 mb-3 ${animationClass}`}></div>
+            <div className={`h-3 bg-neutral-200 rounded-md w-full ${animationClass}`}></div>
+            <div className={`h-3 bg-neutral-200 rounded-md w-full mt-1 ${animationClass}`}></div>
+            <div className={`h-3 bg-neutral-200 rounded-md w-3/4 mt-1 ${animationClass}`}></div>
+            
+            {/* Location info placeholder */}
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center">
+                <div className={`h-3 w-3 bg-neutral-300 rounded-full mr-2 ${animationClass}`}></div>
+                <div className={`h-3 bg-neutral-200 rounded-md w-1/2 ${animationClass}`}></div>
+              </div>
+              <div className="flex items-center">
+                <div className={`h-3 w-3 bg-neutral-300 rounded-full mr-2 ${animationClass}`}></div>
+                <div className={`h-3 bg-neutral-200 rounded-md w-2/3 ${animationClass}`}></div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Skeleton Card Footer */}
-      <div className="product-card-footer">
-        <div className="product-card-details">
-          {/* Skeleton Category and Country */}
-          <div className="product-card-info-line">
-            <div className={`h-4 bg-neutral-200 rounded-md w-1/3 ${animationClass}`} />
-            <div className={`h-4 bg-neutral-200 rounded-md w-1/4 ${animationClass}`} />
-          </div>
-          
-          {/* Skeleton District */}
-          <div className="product-card-info-line">
-            <div className={`h-4 bg-neutral-200 rounded-md w-2/5 ${animationClass}`} />
-          </div>
-          
-          {/* Skeleton Price and Producer */}
-          <div className="product-card-info-line mt-2">
-            <div className={`h-5 bg-neutral-200 rounded-md w-1/4 ${animationClass}`} />
-            <div className={`h-4 bg-neutral-200 rounded-md w-1/3 ${animationClass}`} />
-          </div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+      
+      <CardFooter className="mt-auto bg-neutral-50 border-t p-3 flex justify-between items-center">
+        <div className={`h-5 bg-neutral-200 rounded-md w-16 ${animationClass}`}></div>
+        <div className={`h-3 bg-neutral-200 rounded-md w-8 ${animationClass}`}></div>
+      </CardFooter>
+    </Card>
   );
 };
 

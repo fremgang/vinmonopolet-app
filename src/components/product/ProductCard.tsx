@@ -9,27 +9,65 @@ import {
   CardFooter, 
   CardTitle
 } from '@/components/ui/card';
-import { Globe, Tag } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Globe, Tag, Wine } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
   onClick?: () => void;
-  isLoading?: boolean;
+  loading?: boolean;
+  isPriority?: boolean;
 }
 
 const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
-  ({ product, onClick, isLoading = false }, ref) => {
+  ({ product, onClick, loading = false, isPriority = false }, ref) => {
     const [imageError, setImageError] = useState<boolean>(false);
     const [imageUrl, setImageUrl] = useState<string>('');
+    const [cardHeight, setCardHeight] = useState<number>(0);
     
     // Reset states if product changes
     useEffect(() => {
       setImageError(false);
       setImageUrl(product.imageMain || '');
     }, [product.product_id, product.imageMain]);
-    
+
+    // Use ResizeObserver to maintain aspect ratio and adjust image size dynamically
+    useEffect(() => {
+      if (typeof window === 'undefined') return;
+      
+      const observer = new ResizeObserver(entries => {
+        for (const entry of entries) {
+          // Set a fixed aspect ratio
+          const width = entry.contentRect.width;
+          setCardHeight(width * 1.4); // Slightly taller ratio
+          
+          // Adjust image container based on card width
+          const cardElement = document.getElementById(`product-card-${product.product_id}`);
+          if (cardElement) {
+            const imageContainer = cardElement.querySelector('.product-image-wrapper') as HTMLElement;
+            if (imageContainer) {
+              // Dynamically adjust image size based on card width
+              if (width < 200) {
+                imageContainer.style.height = '130px';
+                imageContainer.style.width = '90px';
+              } else {
+                imageContainer.style.height = '150px'; 
+                imageContainer.style.width = '110px';
+              }
+            }
+          }
+        }
+      });
+      
+      const cardElement = document.getElementById(`product-card-${product.product_id}`);
+      if (cardElement) {
+        observer.observe(cardElement);
+      }
+      
+      return () => observer.disconnect();
+    }, [product.product_id]);
+
     const {
+      product_id,
       name,
       category,
       country,
@@ -48,6 +86,7 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
     // Format price with Norwegian format
     const formatPrice = (price: number | null) => {
       if (price === null) return 'N/A';
+      // Format as "XX XXX kr" to match the screenshot
       return `${new Intl.NumberFormat('no-NO').format(price)} kr`;
     };
 
@@ -56,85 +95,109 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
       setImageError(true);
     };
 
+    // Format product ID to be more visible
+    const formatProductId = (id: string) => {
+      if (!id) return '';
+      // Only show numeric part of ID
+      return id.replace(/^(\d+).*$/, '$1'); 
+    };
+
+    // Format aroma & taste content from lukt and smak
+    const formatTasteProfile = () => {
+      let description = '';
+      
+      if (lukt) {
+        description = lukt;
+      } else if (smak) {
+        description = smak;
+      }
+      
+      if (description.length > 120) {
+        return description.substring(0, 120) + '...';
+      }
+      
+      return description;
+    };
+
     return (
       <Card 
         ref={ref}
+        id={`product-card-${product_id}`}
         onClick={onClick}
-        className="h-full transition-all duration-200 hover:shadow-md hover:-translate-y-1 flex flex-col overflow-hidden cursor-pointer"
+        className="h-full max-w-[280px] transition-all duration-200 hover:shadow-md hover:-translate-y-1 cursor-pointer flex flex-col overflow-hidden mx-auto bg-white rounded-md"
+        style={{ minHeight: cardHeight > 0 ? `${cardHeight}px` : 'auto' }}
       >
-        <CardHeader className="pb-3 border-b border-neutral-100">
-          <CardTitle className="text-lg line-clamp-2 text-center font-serif">{name}</CardTitle>
+        <CardHeader className="pb-2 px-4 pt-4 border-b border-neutral-100">
+          <CardTitle className="text-base line-clamp-2 text-center font-medium">
+            {name}
+          </CardTitle>
         </CardHeader>
         
         <CardContent className="p-4 flex-grow flex flex-col">
-          <div className="mb-4 flex justify-center bg-white rounded-md p-2">
-            <div className="product-image-wrapper h-[140px] w-[100px] flex items-center justify-center">
+          <div className="flex flex-col h-full">
+            {/* Center product image */}
+            <div className="flex justify-center mb-3">
+              <div className="product-image-wrapper h-[150px] w-[110px] flex items-center justify-center bg-white p-1">
               {!imageError && imageUrl ? (
-                <Image
-                  src={`/api/products/image-cache?url=${encodeURIComponent(imageUrl)}`}
-                  alt={name}
-                  width={100}
-                  height={140}
-                  className="max-h-[140px] w-auto object-contain"
-                  sizes="100px"
-                  loading="lazy"
-                  onError={handleImageError}
-                />
-              ) : (
-                <div className="flex items-center justify-center w-full h-full text-neutral-400 text-sm text-center">
-                  No image available
-                </div>
-              )}
+  <Image
+    src={`/api/products/image-cache?url=${encodeURIComponent(imageUrl)}`}
+    alt={name}
+    width={110}
+    height={150}
+    className="max-h-[150px] w-auto object-contain"
+    sizes="110px"
+    // Remove loading="lazy" when priority is true
+    {...(isPriority ? { priority: true } : { loading: 'lazy' })}
+    onError={handleImageError}
+    style={{ width: 'auto', height: '100%' }}
+  />
+) : (
+  <div className="flex items-center justify-center w-full h-full text-neutral-400 text-xs text-center">
+    No image
+  </div>
+)}
+              </div>
             </div>
-          </div>
-          
-          <div className="flex flex-col space-y-3 flex-grow">
-            {/* Country and Region */}
-            {(country || mainRegion) && (
-              <div className="flex items-center text-sm text-neutral-600">
-                <Globe size={14} className="mr-1.5 text-neutral-400 flex-shrink-0" />
-                <span className="truncate">{[country, mainRegion].filter(Boolean).join(', ')}</span>
-              </div>
-            )}
             
-            {/* Category */}
-            {mainCategory && (
-              <div className="flex items-center text-sm text-neutral-600">
-                <Tag size={14} className="mr-1.5 text-neutral-400 flex-shrink-0" />
-                <span className="truncate">{mainCategory}</span>
+            {/* Taste section with title */}
+            <div className="flex-grow">
+              <h4 className="text-xs uppercase font-semibold text-wine-red mb-1.5">
+                AROMA & TASTE
+              </h4>
+              
+              <p className="text-xs text-neutral-700 line-clamp-4">
+                {formatTasteProfile()}
+              </p>
+              
+              {/* Location info with icons */}
+              <div className="mt-3 space-y-1.5">
+                {mainRegion && (
+                  <div className="flex items-center text-xs text-neutral-600">
+                    <Globe size={12} className="mr-1.5 text-neutral-400 flex-shrink-0" />
+                    <span>{mainRegion}</span>
+                  </div>
+                )}
+                
+                {producer && (
+                  <div className="flex items-center text-xs text-neutral-600">
+                    <Wine size={12} className="mr-1.5 text-neutral-400 flex-shrink-0" />
+                    <span className="truncate">{producer}</span>
+                  </div>
+                )}
               </div>
-            )}
-            
-            {/* Taste Description */}
-            {(lukt || smak) && (
-              <div className="mt-2">
-                <h4 className="text-xs uppercase tracking-wide font-semibold text-wine-red mb-1">
-                  {lukt && smak ? 'Aroma & Taste' : (lukt ? 'Aroma' : 'Taste')}
-                </h4>
-                <p className="text-sm text-neutral-700 line-clamp-3">
-                  {lukt || smak}
-                </p>
-              </div>
-            )}
+            </div>
           </div>
         </CardContent>
         
-        <CardFooter className="mt-auto bg-neutral-50 border-t p-4 flex justify-between items-center">
-          <div className="text-lg font-bold text-wine-red">
+        <CardFooter className="mt-auto bg-neutral-50 border-t p-3 flex justify-between items-center">
+          <div className="text-base font-bold text-wine-red">
             {formatPrice(price)}
           </div>
           
           <div className="text-right">
-            {producer && (
-              <div className="text-xs text-neutral-600 truncate max-w-[130px]">
-                {producer}
-              </div>
-            )}
-            {utvalg && (
-              <div className="text-xs italic text-neutral-500">
-                {utvalg}
-              </div>
-            )}
+            <div className="text-xs text-neutral-400">
+              {formatProductId(product_id)}
+            </div>
           </div>
         </CardFooter>
       </Card>

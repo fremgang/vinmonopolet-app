@@ -256,7 +256,8 @@ export function useProducts() {
     if (products.length > 0) {
       console.log('Sample product:', products[0]);
     }
-  }, [products.length, loadingState, initialLoading]);
+  }, [products.length, loadingState, initialLoading, products]); // Added products to dependencies
+  
   
   // Return all the state and functions
   return {
