@@ -224,7 +224,7 @@ async function testScrapeSpecificProduct(productId) {
 }
 
 // Run the main function if this script is executed directly
-if (require.main === module) {
+if (import.meta === module) {
   // Check for command line arguments
   const args = process.argv.slice(2);
   if (args.length > 0 && args[0] === '--test') {

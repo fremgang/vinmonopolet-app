@@ -23,6 +23,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "next.config.cjs", "scripts/*.cjs", "scripts/build-fix.cjs", "scripts/vinmonopolet-scraper.cjs" ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "next.config.cjs", "scripts/*.cjs", "scripts/build-fix.js", "sscripts/vinmonopolet-scraper.mjs"],
   "exclude": ["node_modules"]
 }

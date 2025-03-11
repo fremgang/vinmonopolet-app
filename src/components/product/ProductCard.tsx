@@ -1,5 +1,6 @@
 // src/components/product/ProductCard.tsx
-import * as React from 'react';
+// At the top of src/components/product/FilterPanel.tsx
+import React, { useState, useEffect, forwardRef } from 'react';
 import Image from 'next/image';
 import { Product } from '@/types';
 import { 
