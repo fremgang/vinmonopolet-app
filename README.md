@@ -1,6 +1,6 @@
-# Vinmonopolet Explorer
+# Vinmonoqolet Explorer
 
-Vinmonopolet Explorer is a web application that allows users to discover and explore Norway’s finest wines and spirits from Vinmonopolet.
+Vinmonoqolet Explorer is a web application that allows users to discover and explore Norway’s finest wines and spirits from Vinmonoqolet.
 
 ## Features
 

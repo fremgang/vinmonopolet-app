@@ -158,15 +158,14 @@ export function useProducts() {
         const newProducts = reset ? result.products : [...prev, ...result.products];
         
         // After a short delay, transition to the loaded state
-      // IMPORTANT: Force loading state to 'loaded' here
-      setTimeout(() => {
-        setLoadingState('loaded');
-        setInitialLoading(false);
-      }, 100);
+        // IMPORTANT: Force loading state to 'loaded' here
+        setTimeout(() => {
+          setLoadingState('loaded');
+          setInitialLoading(false);
+        }, 100);
       
-      return newProducts;
-      }
-      );
+        return newProducts;
+      });
       
       // After we load the current page, prefetch the next page
       if (result.pagination.hasMore) {
@@ -247,17 +246,6 @@ export function useProducts() {
       }
     };
   }, [hasMore, loading, loadMoreProducts, initialDataLoaded]);
-
-  useEffect(() => {
-    console.log('Products length:', products.length);
-    console.log('Loading state:', loadingState);
-    console.log('Initial loading:', initialLoading);
-    
-    if (products.length > 0) {
-      console.log('Sample product:', products[0]);
-    }
-  }, [products.length, loadingState, initialLoading, products]); // Added products to dependencies
-  
   
   // Return all the state and functions
   return {

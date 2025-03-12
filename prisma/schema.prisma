@@ -1,4 +1,4 @@
-// prisma/schema.prisma - Enhanced version with better indexes
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,7 +9,7 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// Products model with improved indexing for search performance
+// Products model with optimized indexes
 model products {
   product_id     String  @id
   name           String
@@ -33,16 +33,9 @@ model products {
   imageSmall     String?
   imageMain      String?
   
-  // Improved indexing strategy for search performance
+  // Indexes for better query performance
   @@index([name])
   @@index([category])
   @@index([country])
-  @@index([district])
-  @@index([producer])
   @@index([price])
-  
-  // Composite indexes for common search patterns
-  @@index([country, category])
-  @@index([category, price])
-  @@index([name, country])
 }

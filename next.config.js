@@ -1,3 +1,4 @@
+// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -12,6 +13,7 @@ const nextConfig = {
     ],
     // Increase image cache duration
     minimumCacheTTL: 3600, // 1 hour
+    unoptimized: true, // Add this for easier deployment
   },
   // Add custom headers for caching
   async headers() {

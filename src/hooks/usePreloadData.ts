@@ -31,8 +31,8 @@ export function usePreloadData({
       
       // Prefetch random products (will be cached)
       const response = await fetch(`/api/products?${queryParams.toString()}`, {
-        // Add cache: 'no-store' to ensure fresh data
-        cache: 'no-store'
+        // Next.js 13+ syntax to ensure fresh data
+        cache: 'no-cache'
       });
       
       if (response.ok) {

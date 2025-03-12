@@ -425,18 +425,21 @@ main {
 }
 
 .product-image-wrapper {
-  background-color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 150px;
-  width: 110px;
+  background-color: white;
+  padding: 0; /* Reduced padding */
+  height: 180px; /* Increased height */
+  width: 130px; /* Increased width */
+  margin: 0 auto; /* Center in container */
 }
 
 .product-card-image {
-  max-height: 150px;
+  max-height: 180px;
+  max-width: 130px;
   width: auto;
-  max-width: 100%;
+  height: auto;
   object-fit: contain;
 }
 

@@ -1,9 +1,7 @@
-// src/app/api/products/route.ts - price filter fix
+// src/app/api/products/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
-// Add timeout to prevent long-running queries
-const QUERY_TIMEOUT = 10000; // 10 seconds
+import { Prisma } from '@prisma/client';
 
 export async function GET(request: Request) {
   try {
@@ -11,7 +9,7 @@ export async function GET(request: Request) {
     
     // Extract parameters with validation
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50')));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')));
     const skip = (page - 1) * limit;
     
     const sortBy = ['name', 'price', 'country', 'category'].includes(searchParams.get('sortBy') || '')
@@ -23,118 +21,115 @@ export async function GET(request: Request) {
       : 'asc';
     
     const search = searchParams.get('search') || '';
-    
-    // Updated price filter handling
-    let minPrice = 0;
-    let maxPrice = 10000000; // Increase max price to a much higher value
-    
-    if (searchParams.has('minPrice')) {
-      minPrice = Math.max(0, parseInt(searchParams.get('minPrice') || '0'));
-    }
-    
-    if (searchParams.has('maxPrice')) {
-      maxPrice = Math.max(minPrice, parseInt(searchParams.get('maxPrice') || '10000000'));
-    }
-    
-    const countries = searchParams.getAll('countries');
-    const categories = searchParams.getAll('categories');
-    
-    // Special parameters
     const random = searchParams.get('random') === 'true';
+    const priceNotNull = searchParams.get('priceNotNull') === 'true';
+    
+    console.log(`API request - search: "${search}", page: ${page}, sort: ${sortBy} ${sortOrder}, priceNotNull: ${priceNotNull}`);
     
     // Build where clause
-    const where: any = {};
+    const where: Prisma.productsWhereInput = {};
     
-    if (search) {
-      // Improve search to match multiple fields and use case-insensitive search
+    // Filter out null prices if sorting by price or if explicitly requested
+    if (sortBy === 'price' || priceNotNull) {
+      where.price = { not: null };
+    }
+    
+    // Add search filtering
+    if (search && search.trim() !== '') {
       where.OR = [
-        // Use contains for more flexible matching
         { name: { contains: search, mode: 'insensitive' } },
         { category: { contains: search, mode: 'insensitive' } },
-        { producer: { contains: search, mode: 'insensitive' } },
         { country: { contains: search, mode: 'insensitive' } },
-        // Add district to search criteria
         { district: { contains: search, mode: 'insensitive' } },
-        // Add sub_district to search criteria
-        { sub_district: { contains: search, mode: 'insensitive' } },
-        // Also search in description fields
-        { lukt: { contains: search, mode: 'insensitive' } },
-        { smak: { contains: search, mode: 'insensitive' } }
+        { producer: { contains: search, mode: 'insensitive' } }
       ];
+      console.log(`Searching with term: "${search}"`);
     }
     
-    if (minPrice > 0 || maxPrice < 10000000) {
-      where.price = {
-        gte: minPrice,
-        lte: maxPrice
-      };
-    }
+    // Execute query with proper error handling
+    let products: any[] = [];
+    let totalCount = 0;
     
-    if (countries.length > 0) {
-      where.country = { in: countries };
-    }
-    
-    if (categories.length > 0) {
-      where.category = { in: categories };
-    }
-    
-    // Handle price sorting - filter out null prices when sorting by price
-    if (sortBy === 'price') {
-      where.price = {
-        ...where.price,
-        not: null // Exclude null prices when sorting by price
-      };
-    }
-    
-    // Add timeout promise to prevent long-running queries
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Query timeout')), QUERY_TIMEOUT);
-    });
-    
-    // Execute query with timeout
-    let products;
-    let totalCount;
-    
-    if (random) {
-      // For random products, we need to use a different approach
-      // PostgreSQL-specific random function
-      [products, totalCount] = await Promise.race([
-        Promise.all([
-          prisma.$queryRaw`
-            SELECT * FROM "products" 
-            WHERE "name" IS NOT NULL
-            ORDER BY RANDOM() 
-            LIMIT ${limit}
-          `,
-          prisma.products.count({ where })
-        ]),
-        timeoutPromise
-      ]) as [any[], number];
-    } else {
-      // Normal sorting
-      [products, totalCount] = await Promise.race([
-        Promise.all([
+    try {
+      if (random && !search && sortBy !== 'price') {
+        // For random results without search, use a simpler query
+        products = await prisma.products.findMany({
+          take: limit,
+          select: {
+            product_id: true,
+            name: true,
+            category: true,
+            country: true,
+            price: true,
+            district: true,
+            producer: true,
+            lukt: true,
+            smak: true,
+            imageSmall: true,
+            imageMain: true
+          },
+          orderBy: {
+            name: 'asc' // Use name ordering as base before shuffling
+          }
+        });
+        
+        // Shuffle in memory
+        products = products.sort(() => Math.random() - 0.5);
+        totalCount = await prisma.products.count();
+      } else {
+        // Regular search or paged results
+        [products, totalCount] = await Promise.all([
           prisma.products.findMany({
             where,
             take: limit,
             skip,
             orderBy: {
               [sortBy]: sortOrder.toLowerCase()
+            },
+            select: {
+              product_id: true,
+              name: true,
+              category: true,
+              country: true,
+              price: true,
+              district: true,
+              producer: true,
+              lukt: true,
+              smak: true,
+              imageSmall: true,
+              imageMain: true
             }
           }),
           prisma.products.count({ where })
-        ]),
-        timeoutPromise
-      ]) as [any[], number];
+        ]);
+      }
+      
+      console.log(`Query returned ${products.length} products out of ${totalCount} total`);
+    } catch (dbError) {
+      console.error('Database query error:', dbError);
+      
+      // Return a more friendly response
+      return NextResponse.json({
+        products: [],
+        pagination: { total: 0, page, limit, pages: 0, hasMore: false },
+        error: 'Database query failed',
+        message: 'The query took too long to process. Try a more specific search.'
+      });
     }
     
     // Calculate pagination
     const totalPages = Math.ceil(totalCount / limit);
     const hasMore = page < totalPages;
     
-    // Add cache headers for performance
+    // Add cache headers
     const headers = new Headers();
-    headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
+    
+    // Use shorter cache time for search results
+    if (search) {
+      headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    } else {
+      headers.set('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+    }
     
     return NextResponse.json({
       products,
@@ -147,15 +142,12 @@ export async function GET(request: Request) {
       }
     }, { headers });
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error('Error handling request:', error);
     
-    // Determine appropriate error response
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const status = errorMessage === 'Query timeout' ? 504 : 500;
-    
-    return NextResponse.json(
-      { error: 'Failed to fetch products', message: errorMessage }, 
-      { status }
-    );
+    return NextResponse.json({
+      products: [],
+      pagination: { total: 0, page: 1, limit: 20, pages: 0, hasMore: false },
+      error: 'Something went wrong'
+    });
   }
 }

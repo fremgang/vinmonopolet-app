@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="text-white font-serif text-lg font-semibold mb-3">Vinmonopolet Explorer</h3>
+            <h3 className="text-white font-serif text-lg font-semibold mb-3">Vinmonoqolet Explorer</h3>
             <p className="text-sm">
               A web application to discover and explore Norway`&apos;`s finest wines and spirits.
             </p>
@@ -51,7 +51,7 @@ export default function Footer() {
         </div>
         
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
-          <p>&copy; {new Date().getFullYear()} Vinmonopolet Explorer. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Vinmonoqolet Explorer. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -8,6 +8,7 @@ import { Menu, Wine, ShoppingBag, Search, X } from 'lucide-react';
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
   // Add scroll listener
@@ -50,6 +51,7 @@ export default function Header() {
               variant="ghost"
               size="sm"
               className="text-white border border-white/20 hover:bg-white/10"
+              onClick={() => setSearchOpen(true)}
             >
               <Search size={18} />
             </Button>
@@ -99,13 +101,51 @@ export default function Header() {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start text-white border-white/20 hover:bg-white/10 hover:text-white"
-                  onClick={() => setMenuOpen(false)}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setSearchOpen(true);
+                  }}
                 >
                   <Search size={16} className="mr-2" />
                   Search Products
                 </Button>
               </div>
             </nav>
+          </div>
+        )}
+
+        {/* Search Modal */}
+        {searchOpen && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSearchOpen(false)}>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-medium mb-4">Search Products</h3>
+              <div className="flex">
+                <input 
+                  type="text"
+                  className="flex-1 p-2 border rounded-l-md focus:outline-none"
+                  placeholder="Search for wines, spirits..."
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      window.location.href = `/?search=${encodeURIComponent((e.target as HTMLInputElement).value)}`;
+                      setSearchOpen(false);
+                    }
+                  }}
+                />
+                <button 
+                  className="bg-wine-red hover:bg-wine-red-light text-white px-4 py-2 rounded-r-md"
+                  onClick={(e) => {
+                    const input = (e.currentTarget.previousSibling as HTMLInputElement);
+                    window.location.href = `/?search=${encodeURIComponent(input.value)}`;
+                    setSearchOpen(false);
+                  }}
+                >
+                  <Search size={18} />
+                </button>
+              </div>
+              <div className="mt-4 text-right">
+                <Button variant="ghost" size="sm" onClick={() => setSearchOpen(false)}>Cancel</Button>
+              </div>
+            </div>
           </div>
         )}
       </div>

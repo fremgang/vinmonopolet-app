@@ -57,156 +57,64 @@ async function ensureCacheDir(size: string) {
   }
 }
 
-// Get an image from cache
-async function getImageFromCache(url: string, size: string) {
-  const cacheFilePath = getCacheFilePath(url, size);
-  
+// Forward image directly from source
+async function forwardImage(url: string) {
   try {
-    // Check if cache file exists
-    await fs.access(cacheFilePath);
-    
-    // Read cache metadata
-    const metaPath = `${cacheFilePath}.meta`;
-    try {
-      const metaData = JSON.parse(await fs.readFile(metaPath, 'utf8'));
-      
-      // Check if cache is expired
-      if (metaData.cachedAt && Date.now() - metaData.cachedAt > CACHE_CONFIG.ttl * 1000) {
-        return null; // Cache expired
-      }
-      
-      // Read the actual file
-      const data = await fs.readFile(cacheFilePath);
-      return {
-        data,
-        contentType: metaData.contentType || 'image/jpeg',
-        size: metaData.contentLength || data.length
-      };
-    } catch (err) {
-      // Metadata missing, just return the file
-      const data = await fs.readFile(cacheFilePath);
-      return {
-        data,
-        contentType: 'image/jpeg',
-        size: data.length
-      };
+    // Basic validation
+    if (!url.startsWith('https://bilder.vinmonopolet.no/')) {
+      throw new Error('Only vinmonopolet.no images are allowed');
     }
-  } catch (error) {
-    return null; // Not in cache or error reading
-  }
-}
 
-// Cache an optimized image
-async function cacheOptimizedImage(url: string, imageData: Buffer, size: string, contentType: string) {
-  const cacheFilePath = getCacheFilePath(url, size);
-  
-  try {
-    // Get target dimensions for this size
-    const dimensions = CACHE_CONFIG.sizes[size as keyof typeof CACHE_CONFIG.sizes] || CACHE_CONFIG.sizes.medium;
-    
-    // Process with sharp for optimization
-    let processedImage;
-    
-    // Configure sharp
-    let sharpInstance = sharp(imageData)
-      .resize({
-        width: dimensions.width,
-        height: dimensions.height,
-        fit: 'inside',
-        withoutEnlargement: true
-      });
-    
-    // Choose output format based on content type and configuration
-    if (CACHE_CONFIG.useWebp) {
-      processedImage = await sharpInstance.webp({ quality: CACHE_CONFIG.webpQuality }).toBuffer();
-      contentType = 'image/webp';
-    } else if (CACHE_CONFIG.useAvif && contentType.includes('image/')) {
-      processedImage = await sharpInstance.avif({ quality: CACHE_CONFIG.avifQuality }).toBuffer();
-      contentType = 'image/avif';
-    } else if (contentType.includes('image/jpeg') || contentType.includes('image/jpg')) {
-      processedImage = await sharpInstance.jpeg({ quality: CACHE_CONFIG.quality }).toBuffer();
-    } else if (contentType.includes('image/png')) {
-      processedImage = await sharpInstance.png({ compressionLevel: CACHE_CONFIG.compression }).toBuffer();
-    } else {
-      // For unsupported formats, just use the original
-      processedImage = imageData;
-    }
-    
-    // Write optimized image to cache
-    await fs.writeFile(cacheFilePath, processedImage);
-    
-    // Save metadata for the cached image
-    const metadata = {
-      originalUrl: url,
-      cachedAt: Date.now(),
-      contentType,
-      contentLength: processedImage.length,
-      size,
-      width: dimensions.width,
-      height: dimensions.height,
-      optimized: true
-    };
-    
-    await fs.writeFile(`${cacheFilePath}.meta`, JSON.stringify(metadata));
-    
-    return {
-      data: processedImage,
-      contentType,
-      size: processedImage.length
-    };
-  } catch (error) {
-    console.error(`Error caching optimized image for ${url}:`, error);
-    
-    // Fallback to saving the original without optimization
-    try {
-      await fs.writeFile(cacheFilePath, imageData);
-      
-      const metadata = {
-        originalUrl: url,
-        cachedAt: Date.now(),
-        contentType,
-        contentLength: imageData.length,
-        size,
-        optimized: false
-      };
-      
-      await fs.writeFile(`${cacheFilePath}.meta`, JSON.stringify(metadata));
-      
-      return {
-        data: imageData,
-        contentType,
-        size: imageData.length
-      };
-    } catch (fallbackError) {
-      console.error(`Fallback error caching image for ${url}:`, fallbackError);
-      throw error; // Re-throw the original error
-    }
-  }
-}
-
-// Check if an image exists on the remote server without downloading it
-async function checkImageExists(url: string) {
-  try {
+    // Use fetch to get the image
     const response = await fetch(url, {
-      method: 'HEAD',
       headers: {
-        'User-Agent': 'Mozilla/5.0 Vinmonopolet Explorer'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
       }
     });
-    return response.ok;
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.status}`);
+    }
+
+    // Get image data as array buffer
+    const imageData = await response.arrayBuffer();
+
+    // Get content type from response or default to jpeg
+    const contentType = response.headers.get('Content-Type') || 'image/jpeg';
+
+    // Return image directly
+    return new Response(imageData, {
+      headers: {
+        'Content-Type': contentType,
+        'Cache-Control': `public, max-age=${CACHE_CONFIG.maxAge}`
+      }
+    });
   } catch (error) {
-    console.error(`Error checking if image exists: ${url}`, error);
-    return false;
+    console.error('Error forwarding image:', error);
+    return new Response('Image not found', { status: 404 });
   }
 }
 
 export async function GET(request: Request) {
   // Get image URL and size from the query string
   const { searchParams } = new URL(request.url);
-  const imageUrl = searchParams.get('url');
+  const encodedUrl = searchParams.get('url');
+  
+  // Decode URL parameter properly
+  let imageUrl;
+  try {
+    imageUrl = encodedUrl ? decodeURIComponent(encodedUrl) : null;
+  } catch (e) {
+    // If double-encoded, try again
+    try {
+      imageUrl = encodedUrl ? decodeURIComponent(decodeURIComponent(encodedUrl)) : null;
+    } catch (e2) {
+      imageUrl = null;
+    }
+  }
+  
   const size = searchParams.get('size') || 'medium';
   const skipCache = searchParams.get('skipCache') === 'true';
-  const forceWebp = searchParams.get('webp') === 'true';
   
   // Validate URL
   if (!imageUrl) {
@@ -222,85 +130,7 @@ export async function GET(request: Request) {
   if (!(size in CACHE_CONFIG.sizes)) {
     return NextResponse.json({ error: `Invalid size: ${size}. Valid sizes: ${Object.keys(CACHE_CONFIG.sizes).join(', ')}` }, { status: 400 });
   }
-  
-  try {
-    // Ensure cache directory exists for this size
-    await ensureCacheDir(size);
-    
-    // Try to get from cache first (unless skipCache is true)
-    if (!skipCache) {
-      const cachedImage = await getImageFromCache(imageUrl, size);
-      
-      if (cachedImage) {
-        // Return cached image with appropriate headers
-        const headers = new Headers();
-        headers.set('Content-Type', cachedImage.contentType);
-        headers.set('Cache-Control', `public, max-age=${CACHE_CONFIG.maxAge}, stale-while-revalidate=${CACHE_CONFIG.staleWhileRevalidate}`);
-        headers.set('X-Cache', 'HIT');
-        
-        return new Response(cachedImage.data, { headers });
-      }
-    }
-    
-    // Check if image exists on remote server before trying to fetch it
-    const imageExists = await checkImageExists(imageUrl);
-    
-    if (!imageExists) {
-      // If image doesn't exist, return a 404 response
-      return NextResponse.json({ error: 'Image not found on remote server' }, { status: 404 });
-    }
-    
-    // Not in cache or skipCache is true, fetch from origin
-    const imageResponse = await fetch(imageUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 Vinmonopolet Explorer'
-      }
-    });
-    
-    if (!imageResponse.ok) {
-      throw new Error(`Failed to fetch image: ${imageResponse.status}`);
-    }
-    
-    // Get image data
-    const imageData = await imageResponse.arrayBuffer();
-    const buffer = Buffer.from(imageData);
-    
-    // Get content type from original response or default to jpeg
-    const contentType = imageResponse.headers.get('Content-Type') || 'image/jpeg';
-    
-    // Cache the optimized image (unless skipCache is true)
-    let finalImageData = buffer;
-    let finalContentType = contentType;
-    
-    if (!skipCache) {
-      try {
-        // Process and cache the image with sharp
-        const optimizedImage = await cacheOptimizedImage(
-          imageUrl, 
-          buffer, 
-          size, 
-          forceWebp ? 'image/webp' : contentType
-        );
-        
-        finalImageData = Buffer.from(optimizedImage.data);
-        finalContentType = optimizedImage.contentType;
-      } catch (optimizationError) {
-        console.error('Error optimizing image:', optimizationError);
-        // Continue with original image data on error
-      }
-    }
-    
-    // Return the image with caching headers
-    const headers = new Headers();
-    headers.set('Content-Type', finalContentType);
-    headers.set('Cache-Control', `public, max-age=${CACHE_CONFIG.maxAge}, stale-while-revalidate=${CACHE_CONFIG.staleWhileRevalidate}`);
-    headers.set('X-Cache', 'MISS');
-    
-    return new Response(finalImageData, { headers });
-  } catch (error) {
-    console.error('Error serving cached image:', error);
-    
-    // Fallback to redirect to the original URL
-    return NextResponse.redirect(imageUrl);
-  }
+
+  // For now, just forward the image directly without caching
+  return forwardImage(imageUrl);
 }

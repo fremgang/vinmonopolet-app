@@ -1,4 +1,4 @@
-// src/components/layout/SplashScreen.tsx
+// src/components/layout/SplashScreen.tsx - With better error handling
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -19,15 +19,44 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
   const [countdown, setCountdown] = useState(loadingTime);
   const [fillPercent, setFillPercent] = useState(0);
   const [preloadComplete, setPreloadComplete] = useState(false);
+  const [preloadError, setPreloadError] = useState<string | null>(null);
 
   useEffect(() => {
     // Start preloading data immediately
     const startPreload = async () => {
       try {
-        await onPreload();
-        setPreloadComplete(true);
+        // Simple fallback fetch to ensure we have some data
+        const fallbackFetch = async () => {
+          try {
+            const response = await fetch('/api/products/simple?limit=20');
+            if (response.ok) {
+              const data = await response.json();
+              return data.products;
+            }
+          } catch (e) {
+            console.warn('Fallback fetch failed:', e);
+          }
+          return [];
+        };
+
+        // Try the main preload function
+        try {
+          await onPreload();
+          setPreloadComplete(true);
+        } catch (error) {
+          console.error('Error during main preload:', error);
+          // Try fallback
+          const fallbackProducts = await fallbackFetch();
+          if (fallbackProducts.length > 0) {
+            console.log('Fallback fetch succeeded with', fallbackProducts.length, 'products');
+            setPreloadComplete(true);
+          } else {
+            setPreloadError('Unable to load data. Will continue anyway.');
+          }
+        }
       } catch (error) {
-        console.error('Error during preload:', error);
+        console.error('Unhandled error during preload:', error);
+        setPreloadError('Something went wrong. Will continue anyway.');
         // Still mark as complete so we don't block the app
         setPreloadComplete(true);
       }
@@ -81,7 +110,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
             Vinmonopolet Explorer
           </h1>
           <p className="text-neutral-700">
-            Discover Norway`&apos;`s finest wines & spirits
+            Discover Norway&apos;s finest wines & spirits
           </p>
         </div>
         
@@ -146,10 +175,17 @@ const SplashScreen: React.FC<SplashScreenProps> = ({
           </div>
         </div>
         
-        {/* Status message - only shown when preload is complete */}
+        {/* Status message */}
         {preloadComplete && (
           <p className="text-sm text-green-600 mt-3">
             Resources loaded, preparing your experience...
+          </p>
+        )}
+        
+        {/* Error message */}
+        {preloadError && (
+          <p className="text-sm text-amber-600 mt-3">
+            {preloadError}
           </p>
         )}
       </div>

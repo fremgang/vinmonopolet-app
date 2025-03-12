@@ -1,5 +1,4 @@
 // src/components/product/ProductCard.tsx
-// At the top of src/components/product/FilterPanel.tsx
 import React, { useState, useEffect, forwardRef } from 'react';
 import Image from 'next/image';
 import { Product } from '@/types';
@@ -31,29 +30,16 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
     useWebP = true
   }, ref) => {
     const [imageError, setImageError] = useState<boolean>(false);
-    const [cachedImageUrl, setCachedImageUrl] = useState<string>('');
     
-    // Generate cached image URL when product changes
-    useEffect(() => {
+    // Use direct image URL instead of going through the cache API
+    const getImageUrl = (product: Product): string => {
       if (!product?.imageMain) {
-        setImageError(true);
-        return;
+        return '/placeholder-wine.png'; // You should add a placeholder image to your public folder
       }
       
-      setImageError(false);
-      
-      // Construct the cache API URL
-      const params = new URLSearchParams({
-        url: encodeURIComponent(product.imageMain),
-        size: imageSize
-      });
-      
-      if (useWebP) {
-        params.append('webp', 'true');
-      }
-      
-      setCachedImageUrl(`/api/products/image-cache?${params.toString()}`);
-    }, [product.product_id, product.imageMain, imageSize, useWebP]);
+      // Just use the direct URL
+      return product.imageMain;
+    };
 
     const {
       product_id,
@@ -107,19 +93,6 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
       return description;
     };
 
-    // Get image dimensions based on size
-    const getImageDimensions = () => {
-      switch (imageSize) {
-        case 'tiny': return { width: 100, height: 100 };
-        case 'small': return { width: 300, height: 300 };
-        case 'medium': return { width: 515, height: 515 };
-        case 'large': return { width: 800, height: 800 };
-        default: return { width: 300, height: 300 };
-      }
-    };
-
-    const dimensions = getImageDimensions();
-
     return (
       <Card 
         ref={ref}
@@ -135,20 +108,20 @@ const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
         
         <CardContent className="p-4 flex-grow flex flex-col">
           <div className="flex flex-col h-full">
-            {/* Center product image */}
+            {/* Center product image - INCREASED SIZE */}
             <div className="flex justify-center mb-3">
-              <div className="product-image-wrapper h-[150px] w-[110px] flex items-center justify-center bg-white p-1">
-                {!imageError && cachedImageUrl ? (
+              <div className="product-image-wrapper h-[180px] w-[130px] flex items-center justify-center bg-white p-1">
+                {!imageError ? (
                   <Image
-                    src={cachedImageUrl}
+                    src={getImageUrl(product)}
                     alt={name}
-                    width={110}
-                    height={150}
-                    className="max-h-[150px] w-auto object-contain"
-                    sizes={`${Math.min(dimensions.width, 110)}px`}
+                    width={130}
+                    height={180}
+                    className="max-h-[180px] w-auto object-contain"
+                    sizes={`130px`}
                     {...(isPriority ? { priority: true } : { loading: 'lazy' })}
                     onError={handleImageError}
-                    style={{ width: 'auto', height: '100%' }}
+                    style={{ width: 'auto', height: '100%', maxWidth: '130px' }}
                   />
                 ) : (
                   <div className="flex items-center justify-center w-full h-full text-neutral-400 text-xs text-center">
