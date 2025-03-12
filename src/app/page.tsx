@@ -118,7 +118,7 @@ export default function Home() {
       } else {
         // Don't add duplicates
         const productIds = new Set(products.map(p => p.product_id));
-        const newProducts = data.products.filter(p => !productIds.has(p.product_id));
+        const newProducts = data.products.filter((p: { product_id: string; }) => !productIds.has(p.product_id));
         setProducts(prev => [...prev, ...newProducts]);
       }
       
@@ -243,7 +243,7 @@ export default function Home() {
       {/* Search results message */}
       {!loading && searchTerm && products.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-lg font-medium">No products found for "{searchTerm}"</p>
+          <p className="text-lg font-medium">No products found for &quot;{searchTerm}&quot;</p>
           <p className="text-gray-600 mt-2">Try a different search term or browse our catalog</p>
           <button
             className="mt-4 px-4 py-2 bg-wine-red text-white rounded-md"
