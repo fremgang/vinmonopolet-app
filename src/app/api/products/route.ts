@@ -37,11 +37,11 @@ export async function GET(request: Request) {
     // Add search filtering
     if (search && search.trim() !== '') {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { category: { contains: search, mode: 'insensitive' } },
-        { country: { contains: search, mode: 'insensitive' } },
-        { district: { contains: search, mode: 'insensitive' } },
-        { producer: { contains: search, mode: 'insensitive' } }
+        { name: { contains: search } },
+        { category: { contains: search } },
+        { country: { contains: search } },
+        { district: { contains: search } },
+        { producer: { contains: search } }
       ];
       console.log(`Searching with term: "${search}"`);
     }

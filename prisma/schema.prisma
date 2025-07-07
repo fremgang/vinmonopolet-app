@@ -4,9 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = "file:./products.db"
 }
 
 // Products model with optimized indexes
@@ -20,8 +19,8 @@ model products {
   sub_district   String?
   producer       String?
   varetype       String?
-  lukt           String? @db.Text
-  smak           String? @db.Text
+  lukt           String?
+  smak           String?
   farge          String?
   metode         String?
   inneholder     String?
