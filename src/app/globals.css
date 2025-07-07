@@ -1,7 +1,4 @@
 /* src/app/globals.css - Comprehensive Styling */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 /* Root CSS Variables */
 :root {
@@ -166,7 +163,7 @@
 
 @layer base {
   * {
-    @apply border-border;
+    
   }
   
   html {
@@ -1090,3 +1087,6 @@ main {
   height: 100%;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
 }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
